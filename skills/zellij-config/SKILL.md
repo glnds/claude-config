@@ -1,6 +1,10 @@
 ---
 name: zellij-config
-description: Comprehensive Zellij terminal multiplexer configuration management. Use when the user needs to configure, customize, or enhance their Zellij setup including creating/modifying config.kdl files, building layouts with command panes and tabs, customizing themes and keybindings, setting up plugins, or implementing workspace automation. Triggers on requests about Zellij configuration, layout creation, theme customization, keybinding changes, or workspace setup.
+description: Comprehensive Zellij terminal multiplexer configuration management. Use when the user needs
+  to configure, customize, or enhance their Zellij setup including creating/modifying config.kdl files,
+  building layouts with command panes and tabs, customizing themes and keybindings, setting up plugins,
+  or implementing workspace automation. Triggers on requests about Zellij configuration, layout creation,
+  theme customization, keybinding changes, or workspace setup.
 license: MIT
 metadata:
   version: 1.3
@@ -8,35 +12,42 @@ metadata:
 
 # Zellij Configuration Management
 
-This skill provides comprehensive guidance for managing Zellij configurations, layouts, themes, and advanced features. Zellij is a terminal multiplexer written in Rust that uses KDL (KDL Document Language) for configuration.
+This skill provides comprehensive guidance for managing Zellij configurations, layouts, themes, and advanced
+features. Zellij is a terminal multiplexer written in Rust that uses KDL (KDL Document Language) for
+configuration.
 
 ## Configuration File Location
 
-ALWAYS check for files LOCALLY, avoid checking in any kind of (remote) Docker container
-Zellij configuration lives in `config.kdl`. The user's configuration directory is `~/dotfiles/.config/zellij/`.
+ALWAYS check for files LOCALLY, avoid checking in any kind of (remote) Docker container Zellij
+configuration lives in `config.kdl`. The user's configuration directory is `~/dotfiles/.config/zellij/`.
 The config file should be at `~/dotfiles/.config/zellij/config.kdl`.
-IMPORTANT: to verify the existence of the config file `~/dotfiles/.config/zellij/config.kdl` REMEMBER that there’s a ‘.’ (dot) in the path so the file is HIDDEN.
-IMPORTANT: to verify the existence of the config file `~/dotfiles/.config/zellij/config.kdl` REMEMBER that always use the ‘-a’ option when executing the ‘ls’ command.
+IMPORTANT: to verify the existence of the config file `~/dotfiles/.config/zellij/config.kdl`
+REMEMBER that there's a '.' (dot) in the path so the file is HIDDEN.
+IMPORTANT: to verify the existence of the config file `~/dotfiles/.config/zellij/config.kdl`
+REMEMBER that always use the '-a' option when executing the 'ls' command.
 NEVER use ‘ls’ WITHOUT the ‘-a’ option in this skill!
 
 ## Updates
 
-Updates should be at `~/dotfiles/.config/zellij/config.kdl`.
-If `~/dotfiles/.config/zellij/config.kdl` does NOT EXIST or is NOT FOUND, that is a RED FLAG. In that case, HALT the flow.
-`~/dotfiles/` is managed by Git. Therefore, BEFORE doing anything, check whether there are any pending changes to commit and pull from Git to ENSURE the latest version is in place locally.
+Updates should be at `~/dotfiles/.config/zellij/config.kdl`. If `~/dotfiles/.config/zellij/config.kdl`
+does NOT EXIST or is NOT FOUND, that is a RED FLAG. In that case, HALT the flow. `~/dotfiles/` is managed
+by Git. Therefore, BEFORE doing anything, check whether there are any pending changes to commit and pull
+from Git to ENSURE the latest version is in place locally.
 
 Zellij searches for configuration in this order:
 
 1. `--config` flag path
 2. `ZELLIJ_CONFIG_FILE` environment variable
-3. `$HOME/.config/zellij/config.kdl` (macOS: `/Users/Alice/Library/Application Support/org.Zellij-Contributors.Zellij`)
+3. `$HOME/.config/zellij/config.kdl` (macOS: `/Users/Alice/Library/Application
+   Support/org.Zellij-Contributors.Zellij`)
 4. System location `/etc/zellij`
 
 ## Core Configuration Management
 
 ### Live Configuration Updates
 
-Zellij watches the active configuration file and applies most changes immediately without restart. Changes requiring restart are noted in comments.
+Zellij watches the active configuration file and applies most changes immediately without restart. Changes
+requiring restart are noted in comments.
 
 ### Key Configuration Options
 
@@ -93,7 +104,8 @@ pane command="cargo" {
 **Borderless panes**: `borderless=true` for UI elements
 **Focus control**: `focus=true` to set initial focus
 
-See `references/layout-examples.md` for comprehensive layout patterns including templates, tabs, and complex workflows.
+See `references/layout-examples.md` for comprehensive layout patterns including templates, tabs, and
+complex workflows.
 
 ### Loading Layouts
 
@@ -147,7 +159,8 @@ tab_template name="dev-tab" {
 
 ## Theme Customization
 
-Themes define UI colors using KDL syntax. Themes can be defined in config.kdl or in separate files under `~/.config/zellij/themes/`.
+Themes define UI colors using KDL syntax. Themes can be defined in config.kdl or in separate files under
+`~/.config/zellij/themes/`.
 
 ### Theme Structure
 
@@ -177,7 +190,8 @@ theme "my-theme"  // Activate theme
 2. **Separate files**: Place theme files in `~/.config/zellij/themes/` directory
 3. **Command line**: `zellij options --theme my-theme`
 
-Zellij includes built-in themes: default, dracula, gruvbox-dark, gruvbox-light, nord, tokyo-night, catppuccin, and more.
+Zellij includes built-in themes: default, dracula, gruvbox-dark, gruvbox-light, nord, tokyo-night,
+catppuccin, and more.
 
 See `references/theme-components.md` for detailed UI component customization.
 
@@ -234,7 +248,8 @@ layout {
 
 ## Plugin Configuration
 
-Plugins extend Zellij functionality. Built-in plugins include tab-bar, status-bar, strider (file picker), compact-bar, and session-manager.
+Plugins extend Zellij functionality. Built-in plugins include tab-bar, status-bar, strider
+(file picker), compact-bar, and session-manager.
 
 ### Plugin Aliases
 
@@ -334,10 +349,15 @@ See `references/workflow-examples.md` for complete examples including:
 
 ## Troubleshooting
 
-**Config not loading**: Check file location `~/dotfiles/.config/zellij/config.kdl` using ‘bash ls’ WITH the ‘-a' option
+**Config not loading**: Check file location `~/dotfiles/.config/zellij/config.kdl` using 'bash ls'
+WITH the '-a' option
+
 **Layout errors**: Validate KDL syntax, ensure quotes around strings
+
 **Theme not applying**: Verify theme name matches definition, check spelling
+
 **Keybindings not working**: Check for mode-specific bindings, verify clear-defaults setting
+
 **Plugins not loading**: Ensure plugin location is accessible, check permissions
 
 ## Bundled Resources

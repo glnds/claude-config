@@ -468,7 +468,8 @@ layout {
 ## Layout File Organization
 
 Store layouts in `~/.config/zellij/layouts/`:
-```
+
+```text
 ~/.config/zellij/layouts/
 ├── rust-dev.kdl
 ├── python-dev.kdl
@@ -480,6 +481,7 @@ Store layouts in `~/.config/zellij/layouts/`:
 ```
 
 Load with:
+
 ```bash
 zellij --layout rust-dev
 # or

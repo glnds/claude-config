@@ -4,7 +4,8 @@ Comprehensive guide to customizing Zellij UI components through themes.
 
 ## Theme Structure
 
-A theme consists of UI component definitions with color specifications for different parts of each component.
+A theme consists of UI component definitions with color specifications for different parts of each
+component.
 
 ```kdl
 themes {
@@ -22,11 +23,13 @@ themes {
 Colors can be specified in two formats:
 
 **RGB (space-separated values):**
+
 ```kdl
 fg 248 248 242
 ```
 
 **HEX (string):**
+
 ```kdl
 fg "#F8F8F2"
 ```
@@ -38,6 +41,7 @@ fg "#F8F8F2"
 Unselected ribbons in tab bar and status bar (inactive tabs, non-active modes).
 
 **Attributes:**
+
 - `base` - Base text color
 - `background` - Background color
 - `emphasis_0` - Primary accent color
@@ -46,6 +50,7 @@ Unselected ribbons in tab bar and status bar (inactive tabs, non-active modes).
 - `emphasis_3` - Quaternary accent color
 
 **Example:**
+
 ```kdl
 ribbon_unselected {
     base 0 0 0
@@ -375,6 +380,7 @@ themes {
 ### 2. Test Terminal Colors
 
 Set the theme and open a terminal to verify colors:
+
 ```bash
 zellij options --theme my-theme
 ```
@@ -401,6 +407,7 @@ themes {
 ### 4. Use Theme Tester Plugin
 
 Install and use the theme tester plugin for live preview:
+
 ```kdl
 pane {
     plugin location="https://github.com/imsnif/theme-tester/releases/latest/download/theme-tester.wasm"
@@ -409,7 +416,8 @@ pane {
 
 ### 5. Iterate with Live Reload
 
-With theme defined in config.kdl, Zellij automatically reloads changes. Edit theme, save, and see results immediately.
+With theme defined in config.kdl, Zellij automatically reloads changes. Edit theme, save, see results
+immediately.
 
 ## Theme Organization
 
@@ -427,6 +435,7 @@ theme "theme-one"
 ### Separate Files
 
 **~/.config/zellij/themes/my-theme.kdl:**
+
 ```kdl
 themes {
     my-theme {
@@ -436,6 +445,7 @@ themes {
 ```
 
 **config.kdl:**
+
 ```kdl
 theme "my-theme"
 ```
@@ -452,15 +462,16 @@ theme "my-theme"
 
 ## Color Palette Resources
 
-- **Color Hunt**: https://colorhunt.co/
-- **Coolors**: https://coolors.co/
-- **Adobe Color**: https://color.adobe.com/
-- **Terminal Sexy**: https://terminal.sexy/
-- **Base16**: https://github.com/chriskempson/base16
+- **Color Hunt**: <https://colorhunt.co/>
+- **Coolors**: <https://coolors.co/>
+- **Adobe Color**: <https://color.adobe.com/>
+- **Terminal Sexy**: <https://terminal.sexy/>
+- **Base16**: <https://github.com/chriskempson/base16>
 
 ## Built-in Themes
 
 Zellij includes several built-in themes:
+
 - `default`
 - `dracula`
 - `gruvbox-dark`
@@ -473,6 +484,7 @@ Zellij includes several built-in themes:
 - `solarized-light`
 
 View theme source for reference:
+
 ```bash
 zellij setup --dump-config | grep -A 100 "themes {"
 ```

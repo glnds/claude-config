@@ -4,7 +4,8 @@ Custom skills that extend Claude Code's functionality through structured workflo
 
 ## What are Skills?
 
-Skills are capabilities defined in markdown files that Claude Code can invoke to perform specialized tasks. Each skill contains:
+Skills are capabilities defined in markdown files that Claude Code can invoke
+to perform specialized tasks. Each skill contains:
 
 - **Frontmatter metadata**: Name, description, version, license
 - **Workflow instructions**: Step-by-step execution logic
@@ -17,11 +18,14 @@ Skills are capabilities defined in markdown files that Claude Code can invoke to
 **Version:** 1.1
 **License:** MIT
 
-Creates structured notes in Obsidian with intelligent tag suggestions based on existing vault patterns.
+Creates structured notes in Obsidian with intelligent tag suggestions based on
+existing vault patterns.
 
-**Invocation:** Ask Claude to "create a note", "make a note", or "save content to Obsidian"
+**Invocation:** Ask Claude to "create a note", "make a note", or "save content
+to Obsidian"
 
 **Key Features:**
+
 - Analyzes existing vault to identify common tag patterns
 - Suggests 3-5 relevant tags based on note content
 - Waits for user confirmation before creating note
@@ -29,6 +33,7 @@ Creates structured notes in Obsidian with intelligent tag suggestions based on e
 - Supports hierarchical tags (e.g., `ai/code-agent`, `dpg/strategy`)
 
 **Workflow:**
+
 1. Scans vault using `mcp-obsidian` server to get tag frequencies
 2. Suggests relevant tags matching note content (3+ occurrences prioritized)
 3. Presents options as numbered list for easy selection
@@ -36,6 +41,7 @@ Creates structured notes in Obsidian with intelligent tag suggestions based on e
 5. Reports filepath and applied tags
 
 **Output Format:**
+
 ```yaml
 ---
 tags:
@@ -56,13 +62,14 @@ Content here...
 ```
 
 **Tag Conventions:**
+
 - Lowercase with hyphens for multi-word tags
 - Hierarchical structure using `/` (e.g., `cloud/aws`)
 - 3-5 tags per note (general + specific)
 
 ## Repository Structure
 
-```
+```text
 claude-skills/
 ├── README.md
 ├── CLAUDE.md              # Guidance for Claude Code
@@ -74,6 +81,7 @@ claude-skills/
 ## Creating Skills
 
 Each skill requires:
+
 1. Directory named after skill (lowercase, hyphenated)
 2. `SKILL.md` with YAML frontmatter and workflow
 3. Clear trigger phrases in description

@@ -8,7 +8,8 @@ metadata:
 
 # Make Note
 
-Create structured notes in Obsidian's Resources folder with intelligent tag management based on existing vault patterns.
+Create structured notes in Obsidian's Resources folder with intelligent tag management based on
+existing vault patterns.
 
 ## Workflow
 
@@ -16,22 +17,24 @@ Create structured notes in Obsidian's Resources folder with intelligent tag mana
 
 Before creating any note, scan the vault to understand existing tag patterns:
 
-1. Use the MCP Server `mcp-obsidian` and invoke the tool `obsidian_get_tags` to get a list of all available tags
+1. Use the MCP Server `mcp-obsidian` and invoke the tool `obsidian_get_tags`
+   to get a list of all available tags
 2. Identify the most commonly used tags and their hierarchies
 3. Note tag categories (e.g., work-related, technical, personal)
 
-The MCP tool `obsidian_get_tags` returns a JSON with tag frequencies. Focus on tags that appear more than 3 times to identify genuine patterns rather than one-off tags.
+The MCP tool `obsidian_get_tags` returns a JSON with tag frequencies. Focus on tags that appear
+more than 3 times to identify genuine patterns rather than one-off tags.
 
 This an example of the JSON return:
 
-``` json
+```json
 {
-	tags: {
-		#tag1: 24,
-		#tag2/subtagx: 37,
-		#tag3: 104,
-		#tag4: 62
-	}
+  tags: {
+    #tag1: 24,
+    #tag2/subtagx: 37,
+    #tag3: 104,
+    #tag4: 62
+  }
 }
 ```
 
@@ -42,10 +45,12 @@ Based on the note content and existing tag patterns:
 1. Analyze the note topic and content
 2. Match it against common tags from the vault
 3. Propose 3-5 relevant tags that fit the content
-4. Present tags to the user as a numbered list so that I can easily select tags by answering with the tags’s corresponding number.
+4. Present tags to the user as a numbered list so that I can easily select tags by answering with
+   the tags's corresponding number.
 5. Allow the user to confirm, modify, or add tags
 
 **Tag suggestion format:**
+
 - Present hierarchical tags using slash notation (e.g., `ai/code-agent`, `dpg/strategy`)
 - Group related tags together (e.g., all work tags, all technical tags)
 - Include mix of general and specific tags where appropriate
@@ -55,6 +60,7 @@ Based on the note content and existing tag patterns:
 Present suggested tags to the user for confirmation:
 
 "I suggest these tags for your note:
+
 1. [tag1]
 2. [tag2]
 3. [tag3]
@@ -67,7 +73,8 @@ Wait for user confirmation before proceeding.
 
 Once tags are confirmed:
 
-1. Create the note in the Resources folder using the MCP Server `mcp-obsidian` tool `obsidian_append_content`
+1. Create the note in the Resources folder using the MCP Server `mcp-obsidian` tool
+   `obsidian_append_content`
 2. Include proper frontmatter with:
    - `tags:` field formatted as list
    - `created:` field with current date in format `DD-MM-YYYY HH:MM`
@@ -79,6 +86,7 @@ Once tags are confirmed:
    - `## Related Notes` section with wiki-links to other notes in the vault (if any)
 
 **Frontmatter format:**
+
 ```yaml
 ---
 tags:
@@ -90,6 +98,7 @@ created: DD-MM-YYYY HH:MM
 ```
 
 **Bottom sections format:**
+
 ```markdown
 ## References
 
@@ -102,11 +111,13 @@ created: DD-MM-YYYY HH:MM
 - [[Related Note 2]]
 ```
 
-Only include these sections if there are relevant links or related notes to add. If no references or related notes exist, omit those sections entirely.
+Only include these sections if there are relevant links or related notes to add. If no references
+or related notes exist, omit those sections entirely.
 
 ### Step 5: Confirm Creation
 
 After creating the note, inform the user:
+
 - Confirm the note was created in Resources folder
 - List the filepath
 - Confirm the tags that were applied
@@ -117,31 +128,38 @@ After creating the note, inform the user:
 
 Follow these conventions observed in the vault:
 
-1. **Hierarchical tags**: Use forward slash for hierarchy (e.g., `cloud/aws`, `ai/agentic`, `music/modular`)
+1. **Hierarchical tags**: Use forward slash for hierarchy (e.g., `cloud/aws`, `ai/agentic`,
+   `music/modular`)
 2. **Array format**: Tags in frontmatter use list notation
 3. **Lowercase**: All tags should be lowercase
-4. **Hyphens for multi-word tags**: Use hyphens for multi-word tags (e.g., `platform-engineering`, `code-agent`)
+4. **Hyphens for multi-word tags**: Use hyphens for multi-word tags (e.g., `platform-engineering`,
+   `code-agent`)
 
 ### Common Tag Categories
 
 Based on vault analysis, common tag patterns include:
 
 **Work/DPG Related:**
+
 - `secdevops`, `dpg/strategy`, `dpg/development-enablement`, `platform-engineering`
 
 **Technical:**
+
 - `cloud/aws`, `ai/code-agent`, `ai/agentic`, `coding/sdd`
 
 **Personal/Hobbies:**
+
 - `music/modular`, `learning`, `productivity`
 
 **Context Tags:**
+
 - Work context: Usually includes dpg-related or professional tags
 - Home context: Usually includes personal/hobby tags
 
 ### Tag Selection Strategy
 
 1. **Prioritize existing tags**: Prefer tags already in use (3+ occurrences)
-2. **Match content specificity**: Use specific hierarchical tags when content is specific (e.g., `ai/code-agent` vs just `ai`)
+2. **Match content specificity**: Use specific hierarchical tags when content is specific (e.g.,
+   `ai/code-agent` vs just `ai`)
 3. **Mix breadth and depth**: Include both general category tags and specific subtags
 4. **Limit to 3-5 tags**: Avoid over-tagging; focus on most relevant categories
