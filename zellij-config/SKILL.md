@@ -3,7 +3,7 @@ name: zellij-config
 description: Comprehensive Zellij terminal multiplexer configuration management. Use when the user needs to configure, customize, or enhance their Zellij setup including creating/modifying config.kdl files, building layouts with command panes and tabs, customizing themes and keybindings, setting up plugins, or implementing workspace automation. Triggers on requests about Zellij configuration, layout creation, theme customization, keybinding changes, or workspace setup.
 license: MIT
 metadata:
-  version: 1.1
+  version: 1.3
 ---
 
 # Zellij Configuration Management
@@ -12,21 +12,27 @@ This skill provides comprehensive guidance for managing Zellij configurations, l
 
 ## Configuration File Location
 
-Zellij configuration lives in `config.kdl`. The user's configuration directory is `~/dotfiles/.config/zellij/`. 
+ALWAYS check for files LOCALLY, avoid checking in any kind of (remote) Docker container
+Zellij configuration lives in `config.kdl`. The user's configuration directory is `~/dotfiles/.config/zellij/`.
 The config file should be at `~/dotfiles/.config/zellij/config.kdl`.
+IMPORTANT: to verify the existence of the config file `~/dotfiles/.config/zellij/config.kdl` REMEMBER that there’s a ‘.’ (dot) in the path so the file is HIDDEN.
+IMPORTANT: to verify the existence of the config file `~/dotfiles/.config/zellij/config.kdl` REMEMBER that always use the ‘-a’ option when executing the ‘ls’ command.
+NEVER use ‘ls’ WITHOUT the ‘-a’ option in this skill!
+
+## Updates
+
+Updates should be at `~/dotfiles/.config/zellij/config.kdl`.
+If `~/dotfiles/.config/zellij/config.kdl` does NOT EXIST or is NOT FOUND, that is a RED FLAG. In that case, HALT the flow.
+`~/dotfiles/` is managed by Git. Therefore, BEFORE doing anything, check whether there are any pending changes to commit and pull from Git to ENSURE the latest version is in place locally.
 
 Zellij searches for configuration in this order:
+
 1. `--config` flag path
 2. `ZELLIJ_CONFIG_FILE` environment variable
 3. `$HOME/.config/zellij/config.kdl` (macOS: `/Users/Alice/Library/Application Support/org.Zellij-Contributors.Zellij`)
 4. System location `/etc/zellij`
 
 ## Core Configuration Management
-
-## Updates
-Updates should be at `~/dotfiles/.config/zellij/config.kdl`.
-If `~/dotfiles/.config/zellij/config.kdl` does NOT EXIST or is NOT FOUND, that is a RED FLAG. In that case, HALT the flow.
-`~/dotfiles/` is managed by Git. Therefore, BEFORE doing anything, check whether there are any pending changes to commit and pull from Git to ENSURE the latest version is in place locally.
 
 ### Live Configuration Updates
 
@@ -35,6 +41,7 @@ Zellij watches the active configuration file and applies most changes immediatel
 ### Key Configuration Options
 
 See `references/config-options.md` for comprehensive configuration reference including:
+
 - Display options (mouse_mode, pane_frames, theme)
 - Buffer settings (scroll_buffer_size)
 - Clipboard configuration (copy_command, copy_clipboard)
@@ -51,6 +58,7 @@ Layouts define pre-configured arrangements of panes, tabs, and commands for work
 Layouts use KDL syntax with these core components:
 
 **Basic pane structure:**
+
 ```kdl
 layout {
     pane  // Empty shell pane
@@ -62,11 +70,13 @@ layout {
 ```
 
 **Editor panes:**
+
 ```kdl
 pane edit="src/main.rs"  // Opens file in $EDITOR
 ```
 
 **Command panes:**
+
 ```kdl
 pane command="cargo" {
     args "test"
@@ -88,6 +98,7 @@ See `references/layout-examples.md` for comprehensive layout patterns including 
 ### Loading Layouts
 
 Load layout on session start:
+
 ```bash
 zellij --layout /path/to/layout.kdl
 # or with alias
@@ -95,11 +106,13 @@ zellij --layout https://example.com/layout.kdl
 ```
 
 Apply layout in running session:
+
 ```bash
 zellij action new-tab --layout /path/to/layout.kdl
 ```
 
 Set default layout in config.kdl:
+
 ```kdl
 default_layout "compact"
 ```
@@ -107,6 +120,7 @@ default_layout "compact"
 ### Layout Templates
 
 **Pane templates** avoid repetition:
+
 ```kdl
 pane_template name="cargo-pane" {
     command "cargo"
@@ -118,6 +132,7 @@ cargo-pane { args "run" }
 ```
 
 **Tab templates** structure tabs:
+
 ```kdl
 tab_template name="dev-tab" {
     pane size=1 borderless=true {
@@ -205,6 +220,7 @@ keybinds {
 ### Including Keybindings in Layouts
 
 Layouts can override configuration keybindings:
+
 ```kdl
 layout {
     pane
@@ -246,6 +262,7 @@ pane {
 ### Background Plugins
 
 Load plugins on session start:
+
 ```kdl
 load_plugins {
     my-plugin location="https://example.com/plugin.wasm" {
@@ -259,6 +276,7 @@ load_plugins {
 ### Command Panes
 
 Command panes run specific commands and display exit codes:
+
 - Press Enter to re-run command
 - Exit code displayed when command completes
 - Use `start_suspended=true` to wait before first run
@@ -266,6 +284,7 @@ Command panes run specific commands and display exit codes:
 ### CWD Composition
 
 Set working directories hierarchically:
+
 ```kdl
 tab cwd="/project" {
     pane cwd="frontend"  // Resolves to /project/frontend
@@ -307,6 +326,7 @@ zellij edit file.rs        # Edit file in new pane
 ## Workflow Examples
 
 See `references/workflow-examples.md` for complete examples including:
+
 - Development environment layouts (Rust, Python, Node.js)
 - DevOps layouts (monitoring, deployment)
 - Content creation layouts (documentation, blogging)
@@ -314,7 +334,7 @@ See `references/workflow-examples.md` for complete examples including:
 
 ## Troubleshooting
 
-**Config not loading**: Check file location with `zellij setup --check`
+**Config not loading**: Check file location `~/dotfiles/.config/zellij/config.kdl` using ‘bash ls’ WITH the ‘-a' option
 **Layout errors**: Validate KDL syntax, ensure quotes around strings
 **Theme not applying**: Verify theme name matches definition, check spelling
 **Keybindings not working**: Check for mode-specific bindings, verify clear-defaults setting
@@ -323,6 +343,7 @@ See `references/workflow-examples.md` for complete examples including:
 ## Bundled Resources
 
 ### References
+
 - `references/config-options.md` - Complete configuration option reference
 - `references/layout-examples.md` - Comprehensive layout patterns and templates
 - `references/theme-components.md` - Theme UI component customization guide
