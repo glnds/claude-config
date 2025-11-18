@@ -44,6 +44,9 @@ task at hand. Write clear commit messages that explain why changes were made, no
 
 When creating or editing Markdown files, always ensure compliance with the configured markdownlint rules
 found at `~/.markdownlint.yaml` to avoid time-consuming lint-fix cycles.
+Linting is performed using `markdownlint-cli2`.
+An overview off all possible `markdownlint-cli2` rules can be found at: <https://github.com/markdownlint/markdownlint/blob/main/docs/RULES.md>.
+The documentation about how to configure rules in `~/.markdownlint.yaml` can be found at: <https://github.com/DavidAnson/markdownlint/blob/main/schema/.markdownlint.yaml>.
 
 #### Configuration
 
