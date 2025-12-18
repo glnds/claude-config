@@ -26,14 +26,26 @@ existing test structure.
 
 ### GitHub Issue Integration
 
-Before starting work, check if a relevant GitHub issue exists. If working on a specific issue,
-reference it in commit messages using the issue number (e.g., "Fixes #123" or "Addresses #123").
+**GitHub issues are the primary work tracking mechanism.** All work should be driven by and linked
+to issues.
 
-When encountering bugs or identifying potential improvements during development, create GitHub issues
-to track them rather than immediately implementing fixes outside the current scope.
+**Before any work:**
 
-For significant changes, review related issues to understand context and avoid duplicate work. Update
-issue status and add comments when making meaningful progress.
+- Always check for relevant GitHub issues before starting
+- Never begin implementation without an associated issue
+- If no issue exists, create one first
+
+**During development:**
+
+- Reference issues in all commits using issue numbers (e.g., "Fixes #123" or "Addresses #123")
+- Update issue status and add progress comments regularly
+- Create new issues immediately when discovering bugs or improvements (don't fix out-of-scope)
+
+**For significant changes:**
+
+- Review related issues to understand context and avoid duplicate work
+- Break down large issues into smaller, trackable tasks
+- Link dependent issues explicitly
 
 ### Code Quality
 
@@ -67,8 +79,8 @@ The documentation about how to configure rules in `~/.markdownlint.yaml` can be 
 
 #### Configuration
 
-The global markdownlint configuration is located at `~/.markdownlint.yaml`. All Markdown files must conform
-to the rules defined in this configuration.
+The global markdownlint configuration is located at `~/.markdownlint.yaml`. All Markdown files
+must conform to the rules defined in this configuration.
 
 #### Workflow
 
