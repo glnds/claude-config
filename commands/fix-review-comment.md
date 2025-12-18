@@ -18,6 +18,13 @@ Fix a PR review comment. By default, picks the latest unresolved, non-outdated c
 ## Step 1: Context Detection
 
 ```bash
+# Get current branch name and verify not on main/master
+BRANCH=$(git branch --show-current)
+if [ "$BRANCH" = "main" ] || [ "$BRANCH" = "master" ]; then
+  echo "Error: Cannot run from main/master branch. Checkout a feature branch first."
+  exit 1
+fi
+
 # Get PR info from current branch
 gh pr view --json number,headRefName,url,state,baseRefName
 ```
@@ -38,6 +45,11 @@ If `$ARGUMENTS` contains a comment ID or URL, extract and use that (skip outdate
 Otherwise, fetch the latest unresolved, non-outdated comment:
 
 ```bash
+# Extract values from Step 1 output
+OWNER=$(gh repo view --json owner -q .owner.login)
+REPO=$(gh repo view --json name -q .name)
+NUMBER=$(gh pr view --json number -q .number)
+
 # Get all review threads with outdated status
 gh api graphql -f query='
 query($owner: String!, $repo: String!, $number: Int!) {
@@ -66,7 +78,7 @@ query($owner: String!, $repo: String!, $number: Int!) {
       }
     }
   }
-}'
+}' -F owner="$OWNER" -F repo="$REPO" -F number="$NUMBER"
 ```
 
 **Filtering logic:**
