@@ -17,6 +17,13 @@ Fix issues identified in Claude Code Action reviews. Checks both inline review t
 - `--inline`: Only check inline review threads
 - `--comments`: Only check PR issue comments
 
+## Output Behavior
+
+- Do NOT output intermediate status messages during data gathering
+- Only report findings after all sources have been checked and merged
+- Treat empty results from any single source as normal (check all sources before reporting)
+- If no actionable issues are found across ALL sources, then report "No unresolved review issues found"
+
 ## Step 1: Context Detection
 
 ```bash
@@ -108,6 +115,8 @@ gh api repos/$OWNER/$REPO/issues/$NUMBER/comments
 
 ### 2c. Merge and Prioritize
 
+**After checking ALL sources in 2a and 2b**, consolidate findings:
+
 1. Collect all issues from both sources
 2. For inline threads: each unresolved thread = 1 issue
 3. For PR comments: parse structured issues from `### 🔍 **Potential Issues**` or similar sections
@@ -115,7 +124,7 @@ gh api repos/$OWNER/$REPO/issues/$NUMBER/comments
 5. Sort by severity: `CRITICAL > HIGH > MEDIUM > LOW`
 6. Select target based on `$ARGUMENTS` or highest severity
 
-**If no actionable issues found:**
+**If no actionable issues found across all sources:**
 
 - Report: "No unresolved review issues found on this PR" and stop
 
