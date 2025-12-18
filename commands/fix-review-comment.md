@@ -1,19 +1,21 @@
 # Fix PR Review Comment
 
 ---
-description: Fix issues from Claude bot code review comments on current branch's PR
-argument-hint: [issue_number] [--all] [--skip-tests]
+description: Fix issues from Claude Code Action reviews (inline threads and PR comments)
+argument-hint: [issue_number] [--all] [--skip-tests] [--inline] [--comments]
 model: claude-sonnet-4-20250514
 allowed-tools: Bash(gh:*), Bash(git:*), Read, Write, Edit
 ---
 
-Fix issues identified in Claude bot code review comments. By default, fixes the highest severity unaddressed issue from the latest review.
+Fix issues identified in Claude Code Action reviews. Checks both inline review threads and PR issue comments. By default, fixes the highest severity unaddressed issue.
 
 ## Arguments
 
-- `issue_number` (optional): Specific issue number (1, 2, 3...) from the review to fix. If omitted, picks highest severity.
+- `issue_number` (optional): Specific issue number to fix. If omitted, picks highest severity.
 - `--all`: Fix all issues in sequence
 - `--skip-tests`: Skip test verification (use sparingly)
+- `--inline`: Only check inline review threads
+- `--comments`: Only check PR issue comments
 
 ## Step 1: Context Detection
 
@@ -42,74 +44,132 @@ NUMBER=$(gh pr view --json number -q .number)
 - If no PR exists for this branch, stop and inform the user
 - If PR is already merged/closed, stop and inform the user
 
-## Step 2: Find Claude Review Comment
+## Step 2: Find Review Feedback
 
-Fetch PR issue comments and find the latest Claude code review:
+Check both inline review threads AND PR issue comments (unless filtered by flags).
+
+### 2a. Check Inline Review Threads (GraphQL)
+
+Skip if `--comments` flag is specified.
 
 ```bash
-# Get all issue comments on the PR
-gh api repos/$OWNER/$REPO/issues/$NUMBER/comments --jq '.[] | {id, body, created_at, html_url}'
+gh api graphql -f query='
+query($owner: String!, $repo: String!, $number: Int!) {
+  repository(owner: $owner, name: $repo) {
+    pullRequest(number: $number) {
+      reviewThreads(first: 100) {
+        nodes {
+          id
+          isResolved
+          isOutdated
+          path
+          line
+          comments(first: 10) {
+            nodes {
+              databaseId
+              body
+              path
+              line
+              outdated
+              createdAt
+              author { login }
+              url
+            }
+          }
+        }
+      }
+    }
+  }
+}' -F owner="$OWNER" -F repo="$REPO" -F number="$NUMBER"
 ```
 
-**Identify Claude review comments by pattern:**
+**Filter inline threads:**
 
-- Body starts with `## Code Review - PR #`
-- Contains `### 🔍 **Potential Issues**` section
-- Contains severity markers: `(CRITICAL)`, `(MEDIUM)`, `(LOW)`
+1. `isResolved: false` - only unresolved
+2. `isOutdated: false` - skip outdated (code changed)
+3. Extract actionable issues from comment body
 
-**Select the most recent review comment.**
+### 2b. Check PR Issue Comments (REST)
 
-If no Claude review found, report: "No Claude code review comments found on this PR" and stop.
+Skip if `--inline` flag is specified.
 
-## Step 3: Parse Review Issues
+```bash
+gh api repos/$OWNER/$REPO/issues/$NUMBER/comments
+```
 
-Extract issues from the `### 🔍 **Potential Issues**` section.
+**Identify Claude review comments by patterns:**
 
-Each issue has this structure:
+- Contains `## Code Review` or `Code Review -`
+- Contains severity markers: `CRITICAL`, `HIGH`, `MEDIUM`, `LOW`
+- Contains actionable markers: `**Problem:**`, `**Recommendation:**`, `**Location:**`
+- Contains unchecked checklist items: `- [ ]`
+
+**Select the most recent matching review comment.**
+
+### 2c. Merge and Prioritize
+
+1. Collect all issues from both sources
+2. For inline threads: each unresolved thread = 1 issue
+3. For PR comments: parse structured issues from `### 🔍 **Potential Issues**` or similar sections
+4. Assign severity from markers (default to MEDIUM if not specified)
+5. Sort by severity: `CRITICAL > HIGH > MEDIUM > LOW`
+6. Select target based on `$ARGUMENTS` or highest severity
+
+**If no actionable issues found:**
+
+- Report: "No unresolved review issues found on this PR" and stop
+
+## Step 3: Parse Target Issue
+
+**For inline review threads:**
+
+- File path and line from thread metadata
+- Issue description from comment body
+- Look for severity markers in body
+
+**For PR comment issues:**
+
+Each issue typically has:
 
 ```markdown
-#### 1. **Issue Title (SEVERITY)**
-**Location:** `file.js:line-range`, `other-file.js:line`
+#### N. **Issue Title (SEVERITY)**
+**Location:** `file.js:line-range`
 
-\`\`\`javascript
-// problematic code snippet
-\`\`\`
+**Problem:** Description
 
-**Problem:** Description of the issue
-
-**Recommendation:** Suggested fix with code example
+**Recommendation:** Suggested fix
 ```
 
-Parse into structured list:
+Or checklist format:
 
-- Issue number (1, 2, 3...)
-- Title
-- Severity (CRITICAL, MEDIUM, LOW)
+```markdown
+- [ ] Issue description (file.js:line)
+```
+
+Extract:
+
+- Title/description
+- Severity (CRITICAL, HIGH, MEDIUM, LOW)
 - Location(s) - file paths and line numbers
 - Problem description
 - Recommendation/fix suggestion
-
-**Priority order:** CRITICAL > MEDIUM > LOW
-
-If `$ARGUMENTS` contains a specific issue number, select that issue.
-Otherwise, select the highest severity unaddressed issue.
 
 ## Step 4: Check if Already Fixed
 
 Before making changes, verify the issue isn't already addressed:
 
 ```bash
-# Check recent commits for related changes
 git log --oneline -10
 git diff origin/main -- <file_path>
 ```
 
-Read the file(s) at the specified location(s) and check if the recommendation is already implemented.
+Read the file(s) at specified location(s) and check if the recommendation is already implemented.
 
 **If already fixed:**
 
 - Note which commit fixed it
-- Move to next issue (or stop if no more issues)
+- For inline threads: consider resolving if `--resolve` would be added
+- Move to next issue (or stop if no more)
 
 ## Step 5: Implement the Fix
 
@@ -118,10 +178,11 @@ Read the file(s) at the specified location(s) and check if the recommendation is
 3. Implement the fix following the recommendation
 4. Keep changes minimal and focused
 
-**For common patterns:**
+**Common fix patterns:**
 
 - Memory leak (duplicate listeners): Add idempotency guard
 - Missing cleanup: Add cleanup function or flag
+- Security issue: Apply recommended sanitization
 - Test issues: Update test file accordingly
 
 ## Step 6: Verify the Fix
@@ -129,7 +190,7 @@ Read the file(s) at the specified location(s) and check if the recommendation is
 Unless `--skip-tests` is specified:
 
 ```bash
-# Detect and run appropriate test/lint commands based on project
+# Detect and run appropriate test/lint commands
 npm test 2>&1 || yarn test 2>&1 || pnpm test 2>&1
 python -m pytest 2>&1
 go test ./... 2>&1
@@ -159,7 +220,20 @@ git push
 - Check for upstream changes: `git fetch && git status`
 - If behind, pull and retry
 
-## Step 8: Reply to Review Comment
+## Step 8: Reply to Review
+
+**For inline threads:**
+
+```bash
+gh api graphql -f query='
+mutation($threadId: ID!, $body: String!) {
+  addPullRequestReviewThreadReply(input: {pullRequestReviewThreadId: $threadId, body: $body}) {
+    comment { url }
+  }
+}' -F threadId="$THREAD_ID" -F body="Fixed in commit <sha>."
+```
+
+**For PR comment issues:**
 
 ```bash
 gh api repos/$OWNER/$REPO/issues/$NUMBER/comments \
@@ -168,7 +242,7 @@ gh api repos/$OWNER/$REPO/issues/$NUMBER/comments \
 **Changes:**
 - <bullet points of changes made>
 
-Remaining issues: <count> (<severities>)"
+Remaining issues: <count>"
 ```
 
 ## Step 9: Continue or Complete
@@ -182,19 +256,24 @@ Otherwise, report completion:
 
 ```
 Fixed: Issue #<N> - <Title> (<SEVERITY>)
+Source: inline thread / PR comment
 Commit: <sha>
 Tests: passed/skipped
 
-Remaining issues from review:
-- #2: <Title> (MEDIUM)
-- #3: <Title> (LOW)
+Remaining issues:
+- #2: <Title> (HIGH) [inline]
+- #3: <Title> (MEDIUM) [comment]
 
 Run again to fix next issue, or use --all to fix all.
 ```
 
 ## Notes
 
-- Claude bot posts code reviews as PR comments, not inline review threads
-- Reviews follow a structured format with numbered issues and severity levels
-- Focus on CRITICAL issues first as they may block merging
-- The `--all` flag processes issues in severity order, not numerical order
+- Claude Code Action posts reviews via two methods:
+  - **Inline review threads**: Code-specific comments at exact lines (GraphQL `reviewThreads`)
+  - **PR issue comments**: General feedback, summaries, checklists (REST `/issues/{pr}/comments`)
+- This command checks both sources and merges findings
+- Reviews may follow different formats depending on prompt configuration
+- Severity levels: `CRITICAL > HIGH > MEDIUM > LOW`
+- Use `--inline` or `--comments` to filter to one source
+- Inline threads have precise file/line info; PR comments may need parsing
