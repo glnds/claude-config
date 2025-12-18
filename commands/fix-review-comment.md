@@ -1,19 +1,19 @@
 # Fix PR Review Comment
 
 ---
-description: Fix the latest (or specified) PR review comment on current branch
-argument-hint: [comment_id] [--resolve] [--skip-tests] [--include-outdated]
+description: Fix issues from Claude bot code review comments on current branch's PR
+argument-hint: [issue_number] [--all] [--skip-tests]
 model: claude-sonnet-4-20250514
 allowed-tools: Bash(gh:*), Bash(git:*), Read, Write, Edit
 ---
 
-Fix a PR review comment. By default, picks the latest unresolved, non-outdated comment on the current branch's PR.
+Fix issues identified in Claude bot code review comments. By default, fixes the highest severity unaddressed issue from the latest review.
 
 ## Arguments
-- `comment_id` (optional): Specific comment ID or URL. If omitted, uses latest unresolved comment.
-- `--resolve`: Also resolve the thread after fixing
+
+- `issue_number` (optional): Specific issue number (1, 2, 3...) from the review to fix. If omitted, picks highest severity.
+- `--all`: Fix all issues in sequence
 - `--skip-tests`: Skip test verification (use sparingly)
-- `--include-outdated`: Include outdated comments (normally skipped)
 
 ## Step 1: Context Detection
 
@@ -26,128 +26,117 @@ if [ "$BRANCH" = "main" ] || [ "$BRANCH" = "master" ]; then
 fi
 
 # Get PR info from current branch
-gh pr view --json number,headRefName,url,state,baseRefName
+gh pr view --json number,headRefName,url,state
 ```
 
-Extract owner/repo from the URL or use:
-```bash
-gh repo view --json owner,name
-```
-
-**Validations:**
-- If no PR exists for this branch, stop and inform the user
-- If PR is already merged/closed, stop and inform the user
-
-## Step 2: Get Target Comment
-
-If `$ARGUMENTS` contains a comment ID or URL, extract and use that (skip outdated filtering for explicit targets).
-
-Otherwise, fetch the latest unresolved, non-outdated comment:
+Extract owner/repo:
 
 ```bash
-# Extract values from Step 1 output
 OWNER=$(gh repo view --json owner -q .owner.login)
 REPO=$(gh repo view --json name -q .name)
 NUMBER=$(gh pr view --json number -q .number)
-
-# Get all review threads with outdated status
-gh api graphql -f query='
-query($owner: String!, $repo: String!, $number: Int!) {
-  repository(owner: $owner, name: $repo) {
-    pullRequest(number: $number) {
-      reviewThreads(first: 100) {
-        nodes {
-          id
-          isResolved
-          isOutdated
-          path
-          line
-          comments(first: 10) {
-            nodes {
-              databaseId
-              body
-              path
-              line
-              outdated
-              createdAt
-              author { login }
-              url
-            }
-          }
-        }
-      }
-    }
-  }
-}' -F owner="$OWNER" -F repo="$REPO" -F number="$NUMBER"
 ```
 
-**Filtering logic:**
-1. Filter for `isResolved: false`
-2. Unless `--include-outdated` is specified, also filter for `isOutdated: false` (thread level) AND `outdated: false` (comment level)
-3. Sort remaining by `createdAt` descending
-4. Take the first one
+**Validations:**
 
-**If no actionable comments exist:**
-- If there ARE unresolved but outdated comments, report: "Found X unresolved comments but all are outdated (code has changed). Use --include-outdated to process them, or they may auto-resolve on next push."
-- If truly none, report: "No unresolved review comments found" and stop
+- If no PR exists for this branch, stop and inform the user
+- If PR is already merged/closed, stop and inform the user
 
-## Step 3: Analyze the Comment
+## Step 2: Find Claude Review Comment
 
-Read the comment body and referenced code location.
-
-**If targeting a specific comment that is marked `outdated: true`:**
-- Check the current state of the file at the referenced path
-- Determine if the concern is still valid despite code changes
-- If the issue no longer exists, reply: "This has been addressed by subsequent changes to the code" and resolve if `--resolve` specified, then stop
-
-**Evaluation checklist:**
-1. Is this a valid concern or false positive?
-2. Does the referenced code still exist at the specified path/line?
-3. Does the suggestion align with project conventions?
-4. Would implementing it break existing functionality?
-5. Is this a duplicate of another comment already addressed?
-
-**If the comment is invalid or no longer applicable:**
-- Reply explaining why (e.g., "This code was refactored in commit abc123" or "This is a false positive because...")
-- If `--resolve` specified, resolve the thread
-- Stop here
-
-## Step 4: Check Current State
-
-Before making changes, verify the issue isn't already fixed:
+Fetch PR issue comments and find the latest Claude code review:
 
 ```bash
-# Check if the specific issue mentioned is already addressed
+# Get all issue comments on the PR
+gh api repos/$OWNER/$REPO/issues/$NUMBER/comments --jq '.[] | {id, body, created_at, html_url}'
+```
+
+**Identify Claude review comments by pattern:**
+
+- Body starts with `## Code Review - PR #`
+- Contains `### 🔍 **Potential Issues**` section
+- Contains severity markers: `(CRITICAL)`, `(MEDIUM)`, `(LOW)`
+
+**Select the most recent review comment.**
+
+If no Claude review found, report: "No Claude code review comments found on this PR" and stop.
+
+## Step 3: Parse Review Issues
+
+Extract issues from the `### 🔍 **Potential Issues**` section.
+
+Each issue has this structure:
+
+```markdown
+#### 1. **Issue Title (SEVERITY)**
+**Location:** `file.js:line-range`, `other-file.js:line`
+
+\`\`\`javascript
+// problematic code snippet
+\`\`\`
+
+**Problem:** Description of the issue
+
+**Recommendation:** Suggested fix with code example
+```
+
+Parse into structured list:
+
+- Issue number (1, 2, 3...)
+- Title
+- Severity (CRITICAL, MEDIUM, LOW)
+- Location(s) - file paths and line numbers
+- Problem description
+- Recommendation/fix suggestion
+
+**Priority order:** CRITICAL > MEDIUM > LOW
+
+If `$ARGUMENTS` contains a specific issue number, select that issue.
+Otherwise, select the highest severity unaddressed issue.
+
+## Step 4: Check if Already Fixed
+
+Before making changes, verify the issue isn't already addressed:
+
+```bash
+# Check recent commits for related changes
 git log --oneline -10
 git diff origin/main -- <file_path>
 ```
 
+Read the file(s) at the specified location(s) and check if the recommendation is already implemented.
+
 **If already fixed:**
-- Find the commit that fixed it
-- Reply: "Already addressed in commit {sha}"
-- If `--resolve` specified, resolve the thread
-- Stop here
+
+- Note which commit fixed it
+- Move to next issue (or stop if no more issues)
 
 ## Step 5: Implement the Fix
 
-- Read the relevant file(s)
-- Make the necessary code changes
-- Keep changes minimal and focused on the comment
+1. Read the relevant file(s) at the specified locations
+2. Understand the problem and recommendation
+3. Implement the fix following the recommendation
+4. Keep changes minimal and focused
+
+**For common patterns:**
+
+- Memory leak (duplicate listeners): Add idempotency guard
+- Missing cleanup: Add cleanup function or flag
+- Test issues: Update test file accordingly
 
 ## Step 6: Verify the Fix
 
 Unless `--skip-tests` is specified:
 
 ```bash
-# Detect and run appropriate test/lint commands
-# Common patterns - adapt to project:
+# Detect and run appropriate test/lint commands based on project
 npm test 2>&1 || yarn test 2>&1 || pnpm test 2>&1
-npm run lint 2>&1 || yarn lint 2>&1
 python -m pytest 2>&1
 go test ./... 2>&1
 ```
 
 **If tests fail:**
+
 - Attempt to fix test failures
 - If unable to fix, revert changes and report: "Fix causes test failures, manual intervention needed"
 - Do NOT commit broken code
@@ -156,62 +145,56 @@ go test ./... 2>&1
 
 ```bash
 git add -A
-git commit -m "fix: address review comment on <file>
+git commit -m "fix: <issue title from review>
 
 <brief description of what was fixed>
 
-Addresses: <comment_url>"
+Addresses review issue #<N> (<SEVERITY>)
+Review: <comment_url>"
 git push
 ```
 
 **If push fails:**
+
 - Check for upstream changes: `git fetch && git status`
 - If behind, pull and retry
-- If branch protection blocks push, report the error
 
-## Step 8: Reply to Comment
-
-```bash
-gh api -X POST repos/{owner}/{repo}/pulls/{pr_number}/comments/{comment_id}/replies \
-    -f body="Fixed in commit {commit_sha}.
-
-{brief description of the fix}"
-```
-
-## Step 9: Resolve Thread (if --resolve specified)
-
-Only if `--resolve` is in `$ARGUMENTS`:
+## Step 8: Reply to Review Comment
 
 ```bash
-# Get thread ID for this comment
-THREAD_ID=$(gh api graphql -f query='...' | jq -r '...')
+gh api repos/$OWNER/$REPO/issues/$NUMBER/comments \
+    -f body="Fixed issue #<N> (**<Title>**) in commit <sha>.
 
-# Resolve it
-gh api graphql -f query='
-mutation {
-  resolveReviewThread(input: {threadId: "'$THREAD_ID'"}) {
-    thread { isResolved }
-  }
-}'
+**Changes:**
+- <bullet points of changes made>
+
+Remaining issues: <count> (<severities>)"
 ```
 
-## Summary Output
+## Step 9: Continue or Complete
 
-Report:
-- Comment addressed: {comment_url}
-- Author: {comment_author}
-- File changed: {path}:{line}
-- Commit: {sha}
-- Tests: passed/skipped
-- Thread resolved: yes/no
+If `--all` is specified and more issues remain:
 
-If there are remaining unresolved comments:
-- Remaining actionable comments: X
-- Remaining outdated comments: Y (use --include-outdated or they may auto-clear)
+- Return to Step 4 with the next highest severity issue
+- Continue until all issues are addressed
+
+Otherwise, report completion:
+
+```
+Fixed: Issue #<N> - <Title> (<SEVERITY>)
+Commit: <sha>
+Tests: passed/skipped
+
+Remaining issues from review:
+- #2: <Title> (MEDIUM)
+- #3: <Title> (LOW)
+
+Run again to fix next issue, or use --all to fix all.
+```
 
 ## Notes
 
-- GitHub marks comments as "outdated" when the referenced code changes, even if the underlying issue isn't fixed
-- The Claude GitHub bot creates new comments on each push, so older comments on the same issue become outdated
-- Focus on the latest comment to avoid duplicate work
-- Use `--include-outdated` only if you specifically need to address a stale comment
+- Claude bot posts code reviews as PR comments, not inline review threads
+- Reviews follow a structured format with numbered issues and severity levels
+- Focus on CRITICAL issues first as they may block merging
+- The `--all` flag processes issues in severity order, not numerical order
