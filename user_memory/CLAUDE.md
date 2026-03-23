@@ -5,6 +5,15 @@ the sake of concision.
 
 ## Development Guidelines
 
+### Python Tooling Preferences
+
+Always use Astral tooling for Python projects:
+
+- **uv** for package management, virtual environments, and running scripts
+  (`uv add`, `uv run`, `uv sync`) — never use `pip` or `poetry` directly
+- **ruff** for linting and formatting — never use `flake8`, `pylint`, `black`, or `isort`
+- **ty** for type checking — prefer over `mypy` or `pyright`
+
 ### Clarification Before Implementation
 
 **NEVER start implementing when unclear requirements or ambiguities exist.** Ask questions until every
@@ -69,40 +78,11 @@ task at hand. Write clear commit messages that explain why changes were made, no
 - **IaC:** Terraform, AWS CDK, CloudFormation, or SAM
 - **CI/CD:** GitHub Actions, CodePipeline/CodeBuild
 
-### Markdown Linting with markdownlint-cli2
+### Markdown Linting
 
-When creating or editing Markdown files, always ensure compliance with the configured markdownlint rules
-found at `~/.markdownlint.yaml` to avoid time-consuming lint-fix cycles.
-Linting is performed using `markdownlint-cli2`.
-An overview off all possible `markdownlint-cli2` rules can be found at: <https://github.com/markdownlint/markdownlint/blob/main/docs/RULES.md>.
-The documentation about how to configure rules in `~/.markdownlint.yaml` can be found at: <https://github.com/DavidAnson/markdownlint/blob/main/schema/.markdownlint.yaml>.
-
-#### Configuration
-
-The global markdownlint configuration is located at `~/.markdownlint.yaml`. All Markdown files
-must conform to the rules defined in this configuration.
-
-#### Workflow
-
-1. **Before writing**: Review the rules in `~/.markdownlint.yaml` to understand the requirements
-2. **During writing**: Implement the rules directly while creating content to ensure compliance from
-   the start
-3. **After writing**: Verify compliance by running the linter:
+Use `markdownlint-cli2` with config at `~/.markdownlint.yaml`. Write compliant Markdown from
+the start — review rules before writing, apply during writing, verify after:
 
 ```bash
-   markdownlint-cli2 <filename.md> --config ~/.markdownlint.yaml
+markdownlint-cli2 <filename.md> --config ~/.markdownlint.yaml
 ```
-
-#### Tool Reference
-
-For an overview of markdownlint-cli2 capabilities and options, use:
-
-```bash
-markdownlint-cli2 --help
-```
-
-#### Key Principle
-
-**Write compliant Markdown from the start.** Implementing rules during creation is faster than fixing
-violations afterward. Familiarize yourself with the common rules in `~/.markdownlint.yaml` to write
-clean Markdown on the first attempt.
