@@ -33,29 +33,6 @@ When creating new features or fixing bugs, start by adding or modifying tests. E
 before considering work complete. Place tests in appropriate directories following the project's
 existing test structure.
 
-### GitHub Issue Integration
-
-**GitHub issues are the primary work tracking mechanism.** All work should be driven by and linked
-to issues.
-
-**Before any work:**
-
-- Always check for relevant GitHub issues before starting
-- Never begin implementation without an associated issue
-- If no issue exists, create one first
-
-**During development:**
-
-- Reference issues in all commits using issue numbers (e.g., "Fixes #123" or "Addresses #123")
-- Update issue status and add progress comments regularly
-- Create new issues immediately when discovering bugs or improvements (don't fix out-of-scope)
-
-**For significant changes:**
-
-- Review related issues to understand context and avoid duplicate work
-- Break down large issues into smaller, trackable tasks
-- Link dependent issues explicitly
-
 ### Code Quality
 
 Maintain consistency with existing code style and architecture patterns. Keep changes focused on the
