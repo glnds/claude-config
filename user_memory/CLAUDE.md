@@ -55,7 +55,9 @@ task at hand. Write clear commit messages that explain why changes were made, no
 - **IaC:** Terraform, AWS CDK, CloudFormation, or SAM
 - **CI/CD:** GitHub Actions, CodePipeline/CodeBuild
 
-### Markdown Linting
+### Markdown
+
+**Line length limit is 100 characters.** Wrap all Markdown at 100 cols — not 80.
 
 Use `markdownlint-cli2` with config at `~/.markdownlint.yaml`. Write compliant Markdown from
 the start — review rules before writing, apply during writing, verify after:
