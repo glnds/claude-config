@@ -33,25 +33,16 @@ Each skill follows a consistent structure:
 
 1. **YAML Frontmatter**: Metadata including name, description, license, and version
 2. **Workflow Instructions**: Step-by-step execution logic for Claude to follow
-3. **Integration Patterns**: MCP server tool usage, user confirmation points
+3. **Integration Patterns**: User confirmation points
 4. **Reference Materials**: Supporting documentation in `references/` subdirectories
 
 The frontmatter `description` field is critical—it defines trigger phrases that activate the skill and explains when Claude should use it.
-
-### MCP Server Integration
-
-Skills integrate with external systems through MCP (Model Context Protocol) servers:
-
-- **mcp-obsidian**: Note creation, search, tag management (`make-note`, `sparring`, `text-enhancer`)
-- **aws-documentation**: AWS service documentation lookup (`sparring`, `text-enhancer`)
-
-Skills use these tools to gather context before performing actions, ensuring informed decision-making.
 
 ### User Confirmation Pattern
 
 Skills implement user confirmation at critical decision points:
 
-1. Gather context from MCP servers or local files
+1. Gather context from local files
 2. Analyze and prepare suggestions
 3. Present options to user for confirmation
 4. Execute action only after approval
@@ -67,9 +58,8 @@ When creating a new skill:
 2. **SKILL.md**: Include YAML frontmatter with clear trigger phrases in description
 3. **Workflow sections**: Use `##` headers for major steps, `###` for substeps
 4. **User interactions**: Explicitly state when to wait for user input
-5. **MCP tools**: Document which tools are used and when
-6. **Examples**: Include code blocks showing expected formats
-7. **References**: Store supporting docs in `references/` subdirectory if needed
+5. **Examples**: Include code blocks showing expected formats
+6. **References**: Store supporting docs in `references/` subdirectory if needed
 
 ### Frontmatter Template
 
@@ -97,29 +87,24 @@ metadata:
 ## Existing Skills
 
 ### make-note
+
 Creates structured notes in Obsidian with intelligent tag suggestions based on vault patterns. Scans existing tags, suggests relevant ones, waits for confirmation, then creates note in Resources folder with proper frontmatter.
 
-**Key MCP tools**: `obsidian_get_tags`, `obsidian_append_content`
-
 ### sparring
+
 Critical thinking partner for technical concepts and strategy. Researches user's Obsidian notes to understand context, identifies gaps and assumptions, provides constructive challenge. For AWS topics, consults AWS documentation.
 
-**Key MCP tools**: `obsidian_simple_search`, `obsidian_complex_search`, `search_documentation`, `read_documentation`
-
 ### text-enhancer
+
 Enhances professional and technical text with grammar correction, clarity improvements, and factual verification. Integrates with AWS Documentation and Obsidian to verify technical accuracy and find relevant context.
 
-**Key MCP tools**: `obsidian_simple_search`, `search_documentation`, `read_documentation`
-
 ### verbalized-sampling
+
 Prompt engineering technique to overcome mode collapse in LLM responses by generating multiple answers with probabilities. Useful for creative tasks, brainstorming, and exploring alternative solutions.
 
-**Key MCP tools**: None (pure prompting technique)
-
 ### zellij-config
-Comprehensive Zellij terminal multiplexer configuration management. Handles config.kdl files, layouts, themes, keybindings, and plugins. Configuration lives in `~/dotfiles/.config/zellij/`.
 
-**Key MCP tools**: None (file manipulation only)
+Comprehensive Zellij terminal multiplexer configuration management. Handles config.kdl files, layouts, themes, keybindings, and plugins. Configuration lives in `~/dotfiles/.config/zellij/`.
 
 **Important**: Always use `ls -a` when checking for Zellij config files due to hidden directories. Pull from Git before modifying `~/dotfiles/`.
 

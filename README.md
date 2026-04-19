@@ -1,28 +1,8 @@
 # Claude Config
 
-Personal Claude Code configuration: MCP server templates, user instructions, and custom skills.
+Personal Claude Code configuration: user instructions and custom skills.
 
 ## Repository Contents
-
-### MCP Configuration Template
-
-The `mcp.json` file provides a starting template for MCP server configuration. Copy to your
-project's `.mcp.json` and customize as needed.
-
-**Included servers:**
-
-| Server | Purpose |
-|--------|---------|
-| chrome-devtools | Browser automation via Chrome DevTools |
-| playwright | Web testing and automation |
-| context7 | Code snippet and documentation lookups |
-| serena | IDE assistant integration |
-| awslabs.aws-documentation-mcp-server | AWS documentation search and lookup |
-| iam-policy-autopilot | IAM policy generation assistance |
-| awslabs.aws-api-mcp-server | AWS CLI command execution |
-| awslabs.aws-iac-mcp-server | Infrastructure-as-code assistance |
-| awslabs.aws-serverless-mcp-server | Serverless AWS service guidance |
-| awslabs.dynamodb-mcp-server | DynamoDB schema and query assistance |
 
 ### Plugins
 
@@ -79,8 +59,8 @@ Copy to `~/.claude/CLAUDE.md` for global application.
 
 ### Skills
 
-Skills extend Claude Code with structured workflows. Each skill contains frontmatter metadata,
-step-by-step instructions, and MCP integrations.
+Skills extend Claude Code with structured workflows. Each skill contains frontmatter metadata
+and step-by-step instructions.
 
 #### make-note (v1.2)
 
@@ -120,7 +100,6 @@ Config location: `~/dotfiles/.config/zellij/`
 
 ```text
 claude-config/
-├── mcp.json               # MCP server configuration template
 ├── CLAUDE.md              # Repo-level Claude instructions
 ├── README.md              # This file
 ├── user_memory/
