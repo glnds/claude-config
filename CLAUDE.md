@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This repository contains:
 
-- **Custom Claude Code skills** that extend functionality through structured workflows. Skills are capabilities defined in markdown files that Claude Code invokes to perform specialized tasks like creating Obsidian notes, enhancing text, analyzing AWS documentation, and configuring Zellij terminal multiplexer.
+- **Custom Claude Code skills** that extend functionality through structured workflows. Skills are capabilities defined in markdown files that Claude Code invokes to perform specialized tasks like creating Obsidian notes and applying verbalized sampling.
 - **User memory file** (`user_memory/CLAUDE.md`) containing user-specific instructions and preferences for Claude Code interactions.
 
 ## Repository Structure
@@ -90,23 +90,9 @@ metadata:
 
 Creates structured notes in Obsidian with intelligent tag suggestions based on vault patterns. Scans existing tags, suggests relevant ones, waits for confirmation, then creates note in Resources folder with proper frontmatter.
 
-### sparring
-
-Critical thinking partner for technical concepts and strategy. Researches user's Obsidian notes to understand context, identifies gaps and assumptions, provides constructive challenge. For AWS topics, consults AWS documentation.
-
-### text-enhancer
-
-Enhances professional and technical text with grammar correction, clarity improvements, and factual verification. Integrates with AWS Documentation and Obsidian to verify technical accuracy and find relevant context.
-
 ### verbalized-sampling
 
 Prompt engineering technique to overcome mode collapse in LLM responses by generating multiple answers with probabilities. Useful for creative tasks, brainstorming, and exploring alternative solutions.
-
-### zellij-config
-
-Comprehensive Zellij terminal multiplexer configuration management. Handles config.kdl files, layouts, themes, keybindings, and plugins. Configuration lives in `~/dotfiles/.config/zellij/`.
-
-**Important**: Always use `ls -a` when checking for Zellij config files due to hidden directories. Pull from Git before modifying `~/dotfiles/`.
 
 ## Development Workflow
 
