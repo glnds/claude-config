@@ -14,13 +14,6 @@ Always use Astral tooling for Python projects:
 - **ruff** for linting and formatting — never use `flake8`, `pylint`, `black`, or `isort`
 - **ty** for type checking — prefer over `mypy` or `pyright`
 
-### Clarification Before Implementation
-
-**NEVER start implementing when unclear requirements or ambiguities exist.** Ask questions until every
-detail is crystal clear. Do not make assumptions. Do not fill in gaps. Do not interpret vague requirements.
-If multiple approaches are possible, explicitly confirm the intended direction before writing code.
-Ambiguity means stop and ask, not guess and proceed.
-
 ### Test-Driven Development
 
 Write tests before implementing functionality. Follow this cycle:
@@ -38,17 +31,24 @@ existing test structure.
 Maintain consistency with existing code style and architecture patterns. Keep changes focused on the
 task at hand. Write clear commit messages that explain why changes were made, not just what changed.
 
-### AWS API MCP Usage Policy
+### AWS CLI Usage Policy
 
-**ONLY Allowed (read-only):**
+Use the AWS CLI. Do not use the AWS API MCP server.
 
-- `describe-*`, `list-*`, `get-*` commands
-- Status checks, log queries, metric reads
+All `aws` calls run under an SSO profile with the `ReadOnlyAccess` permission
+set. Set `AWS_PROFILE` or pass `--profile`. Verify once per session:
+
+```bash
+aws sts get-caller-identity
+```
+
+ARN must contain `assumed-role/AWSReservedSSO_ReadOnlyAccess`. If not, stop.
 
 **Forbidden:**
 
-- Any mutating operation (`create-*`, `update-*`, `delete-*`, `put-*`, `modify-*`, `start-*`,
-  `stop-*`, `invoke-*`, etc.)
+- Any mutating verb (`create-*`, `update-*`, `delete-*`, `put-*`, `modify-*`,
+  `start-*`, `stop-*`, `terminate-*`, `run-*`, `invoke-*`, etc.)
+- `aws sso login`: user handles authentication.
 
 **Infrastructure changes MUST use:**
 
@@ -65,3 +65,53 @@ the start — review rules before writing, apply during writing, verify after:
 ```bash
 markdownlint-cli2 <filename.md> --config ~/.markdownlint.yaml
 ```
+
+## Autonomy
+
+Proceed without asking. Ask only before:
+
+- Irreversible destructive actions (force push, `rm -rf`, `DROP TABLE`, deleting remote branches)
+- Touching production infrastructure or external credentials
+- Externally visible actions (publishing, sending email, posting to Slack, creating PRs to
+  protected branches)
+- Incurring costs beyond the current subscription
+
+Apply these decision defaults:
+
+<!-- markdownlint-disable MD013 -->
+
+| Situation                 | Action                                                                      |
+|---------------------------|-----------------------------------------------------------------------------|
+| Multiple valid approaches | Match existing patterns, else pick the simplest                             |
+| Ambiguous requirement     | Literal, narrowest interpretation                                           |
+| Missing information       | Codebase conventions first, industry defaults second                        |
+| New file placement        | Follow existing directory structure; no new top-level directories           |
+| Naming and style          | Match codebase conventions                                                  |
+| Error handling            | Fail fast with descriptive messages; never swallow exceptions               |
+| Dependencies              | Use what is in the project; no new dependencies without explicit approval   |
+| Scope                     | Smallest correct change; no adjacent fixes, no opportunistic refactors      |
+| Blocked after 3 attempts  | Write to `tasks/blocked.md`, continue with next task                        |
+| Stuck in a loop           | Step back, search for established patterns, adapt                           |
+| Git                       | Conventional commits, commit frequently, never `--no-verify`                |
+
+<!-- markdownlint-enable MD013 -->
+
+Document every assumption inline and in the final report's `## Assumptions` section. No
+clarifying questions during implementation.
+
+## Plan review routing
+
+When `writing-plans` completes and produces a plan file in `docs/plans/`,
+dispatch `adversarial-plan-review` as a subagent with only the plan path
+and spec path as input, before invoking `subagent-driven-development`.
+
+- On verdict PASS: proceed to implementation.
+- On verdict NEEDS REWORK: re-invoke `writing-plans` with the findings file
+  at `docs/plans/<plan>.review.md` as additional input. Do not invoke the
+  review skill a second time in the same session; if the reworked plan
+  still fails on next review, promote to NEEDS HUMAN.
+- On verdict NEEDS HUMAN: halt and surface the review file to the user.
+
+Skip the review entirely on plans with fewer than three tasks, or tasks
+that modify a single file. The inline self-review in writing-plans already
+covers those cases.
