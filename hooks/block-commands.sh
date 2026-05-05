@@ -27,8 +27,7 @@ command=$(echo "$input" | grep -oE '"command"[[:space:]]*:[[:space:]]*"[^"]*"' |
 # --- Check 1: make -----------------------------------------------------------
 
 if [ "$BLOCK_MAKE" = "true" ]; then
-    if echo "$command" | grep -qE '(^|[;&|`$(
-])(env[[:space:]]+[^;&|]*)?([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]+[[:space:]]+)*g?make($|[[:space:]]|;|&|\|)'; then
+    if echo "$command" | grep -qE '(^|[;&|`$(])[[:space:]]*(env[[:space:]]+[^;&|]*)?([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]+[[:space:]]+)*g?make($|[[:space:]]|;|&|\|)'; then
         cat >&2 <<'EOF'
 Blocked: `make` invocations are not permitted.
 
@@ -36,9 +35,10 @@ Makefiles in this repository are written for humans, not AI agents. They
 encode workflow assumptions (active AWS profile, environment, confirmation
 prompts) that should not be made on the user's behalf.
 
-If you need to perform the underlying action, ask the user to run the
-make target themselves, or invoke the underlying command directly with
-explicit arguments after confirming intent with the user.
+Do NOT work around this block by reading the Makefile and running its
+recipe commands manually — that defeats the purpose of the block. Ask the
+user to run the target themselves (e.g. `! make <target>` in the prompt
+so output lands in the conversation).
 EOF
         exit 2
     fi
@@ -98,8 +98,7 @@ if [ -n "$BLOCKED_PROFILE_SUBSTRINGS" ]; then
     # Detect whether the command invokes the aws CLI at all.
     # Matches `aws ` at start of command, after env-var prefix, or after
     # a shell separator (; && || | etc.). Avoids matching "paws" or "saws".
-    if echo "$command" | grep -qE '(^|[;&|`$(
-])(env[[:space:]]+[^;&|]*)?([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]+[[:space:]]+)*aws([[:space:]]|$)'; then
+    if echo "$command" | grep -qE '(^|[;&|`$(])[[:space:]]*(env[[:space:]]+[^;&|]*)?([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]+[[:space:]]+)*aws([[:space:]]|$)'; then
 
         command_lower=$(echo "$command" | tr '[:upper:]' '[:lower:]')
         IFS=',' read -ra substrings <<< "$BLOCKED_PROFILE_SUBSTRINGS"
