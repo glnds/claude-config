@@ -31,6 +31,20 @@ existing test structure.
 Maintain consistency with existing code style and architecture patterns. Keep changes focused on the
 task at hand. Write clear commit messages that explain why changes were made, not just what changed.
 
+### Infrastructure as Code
+
+**IaC is the single source of truth for all infrastructure.** Never click in
+consoles, never mutate via CLI/SDK. If it isn't in code, it doesn't exist.
+
+**Allowed tools:** Terraform, AWS CDK, CloudFormation, SAM.
+
+**Deployment is pipeline-only.** Never `terraform apply`, `sam deploy`,
+`cdk deploy`, or equivalent from a workstation. All changes ship through
+CI/CD (GitHub Actions, CodePipeline/CodeBuild).
+
+**Drift = bug.** If reality and IaC disagree, fix IaC and re-deploy via the
+pipeline. Do not reconcile by hand.
+
 ### AWS CLI Usage Policy
 
 Use the AWS CLI. Do not use the AWS API MCP server.
@@ -49,11 +63,6 @@ ARN must contain `assumed-role/AWSReservedSSO_ReadOnlyAccess`. If not, stop.
 - Any mutating verb (`create-*`, `update-*`, `delete-*`, `put-*`, `modify-*`,
   `start-*`, `stop-*`, `terminate-*`, `run-*`, `invoke-*`, etc.)
 - `aws sso login`: user handles authentication.
-
-**Infrastructure changes MUST use:**
-
-- **IaC:** Terraform, AWS CDK, CloudFormation, or SAM
-- **CI/CD:** GitHub Actions, CodePipeline/CodeBuild
 
 ### Markdown
 
