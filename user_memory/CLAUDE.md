@@ -68,11 +68,13 @@ ARN must contain `assumed-role/AWSReservedSSO_ReadOnlyAccess`. If not, stop.
 
 **Line length limit is 100 characters.** Wrap all Markdown at 100 cols — not 80.
 
-Use `markdownlint-cli2` with config at `~/.markdownlint.yaml`. Write compliant Markdown from
-the start — review rules before writing, apply during writing, verify after:
+Use `rumdl` with config at `~/.config/rumdl/rumdl.toml` (auto-discovered).
+Write compliant Markdown from the start — review rules before writing, apply during writing,
+verify after:
 
 ```bash
-markdownlint-cli2 <filename.md> --config ~/.markdownlint.yaml
+rumdl check <filename.md>   # lint
+rumdl fmt <filename.md>     # autoformat violations
 ```
 
 ## Autonomy
