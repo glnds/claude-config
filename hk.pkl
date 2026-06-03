@@ -1,0 +1,34 @@
+amends "package://github.com/jdx/hk/releases/download/v1.45.0/hk@1.45.0#/Config.pkl"
+import "package://github.com/jdx/hk/releases/download/v1.45.0/hk@1.45.0#/Builtins.pkl"
+
+local pre_commit_steps = new Mapping<String, Step> {
+    ["rumdl"] {
+        glob = Regex(#"\.md$"#)
+        check = "rumdl check {{files}}"
+        fix = "rumdl check --fix {{files}}"
+    }
+    ["trufflehog"] {
+        check = "trufflehog filesystem {{files}} --no-update --fail"
+    }
+}
+
+hooks {
+    ["pre-commit"] {
+        fix = true
+        stash = "git"
+        steps {
+            ...pre_commit_steps
+        }
+    }
+    ["check"] {
+        steps {
+            ...pre_commit_steps
+        }
+    }
+    ["fix"] {
+        fix = true
+        steps {
+            ...pre_commit_steps
+        }
+    }
+}

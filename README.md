@@ -48,7 +48,7 @@ Copy to `~/.claude/CLAUDE.md` for global application.
 - Clarify before implementing (never assume)
 - Test-driven development (red-green-refactor)
 - GitHub issue integration
-- Markdown linting with markdownlint-cli2
+- Markdown linting with rumdl
 
 ### Skills
 
@@ -146,6 +146,12 @@ session.
 claude-config/
 ├── CLAUDE.md              # Repo-level Claude instructions
 ├── README.md              # This file
+├── .mise.toml             # mise tools (hk, pkl, rumdl, trufflehog, jq) + tasks
+├── hk.pkl                 # hk git-hook config (pre-commit, check, fix)
+├── .rumdl.toml            # rumdl config (markdown line-length 100)
+├── generic_settings.json  # Shared Claude settings merged on sync
+├── hooks/
+│   └── block-commands.sh  # PreToolUse Bash guard
 ├── user_memory/
 │   └── CLAUDE.md          # User-level instructions (copy to ~/.claude/)
 └── skills/
@@ -153,6 +159,38 @@ claude-config/
         ├── SKILL.md       # Skill definition
         └── references/    # Optional supporting docs
 ```
+
+## Development
+
+Tooling and git hooks are managed with [mise](https://github.com/jdx/mise) (tool versions + task
+runner) and [hk](https://github.com/jdx/hk) (git hook runner).
+
+**Setup:**
+
+```bash
+brew install mise        # one-time, if not already installed
+mise run bootstrap       # mise install (tools) + hk install (git hooks)
+```
+
+**Tasks:**
+
+```bash
+mise tasks               # list available tasks
+mise run sync            # sync hook + settings + user CLAUDE.md into ~/.claude and ~/.claude-dpg
+```
+
+**Checks:**
+
+`pre-commit` runs automatically on `git commit`: [rumdl](https://github.com/jdx/rumdl) lints and
+auto-fixes Markdown, and trufflehog scans staged files for secrets. Run them manually with:
+
+```bash
+hk check                 # report issues
+hk fix                   # apply fixes
+```
+
+On Git 2.54+ hk stores hooks as git config, not scripts in `.git/hooks/`. Verify with
+`git config --get-regexp '^hook\.'` (an empty `.git/hooks/` is expected).
 
 ## License
 

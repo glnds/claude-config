@@ -6,16 +6,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This repository contains:
 
-- **Custom Claude Code skills** that extend functionality through structured workflows. Skills are capabilities defined in markdown files that Claude Code invokes to perform specialized tasks like creating Obsidian notes and applying verbalized sampling.
-- **User memory file** (`user_memory/CLAUDE.md`) containing user-specific instructions and preferences for Claude Code interactions.
+- **Custom Claude Code skills** that extend functionality through structured workflows. Skills
+  are capabilities defined in markdown files that Claude Code invokes to perform specialized tasks
+  like creating Obsidian notes and applying verbalized sampling.
+- **User memory file** (`user_memory/CLAUDE.md`) containing user-specific instructions and
+  preferences for Claude Code interactions.
 
 ## Repository Structure
 
-```
+```text
 claude-skills/
 ├── CLAUDE.md                    # This file
 ├── README.md                    # Public documentation
 ├── LICENSE                      # MIT license
+├── .mise.toml                   # mise tools + tasks (bootstrap, sync)
+├── hk.pkl                       # hk git-hook config (rumdl + trufflehog)
+├── .rumdl.toml                  # rumdl config (markdown line-length 100)
 ├── user_memory/                 # User-specific Claude instructions
 │   └── CLAUDE.md                # Personal preferences and guidelines
 └── skills/                      # Skills directory
@@ -36,7 +42,8 @@ Each skill follows a consistent structure:
 3. **Integration Patterns**: User confirmation points
 4. **Reference Materials**: Supporting documentation in `references/` subdirectories
 
-The frontmatter `description` field is critical—it defines trigger phrases that activate the skill and explains when Claude should use it.
+The frontmatter `description` field is critical—it defines trigger phrases that activate the skill
+and explains when Claude should use it.
 
 ### User Confirmation Pattern
 
@@ -88,15 +95,29 @@ metadata:
 
 ### make-note
 
-Creates structured notes in Obsidian with intelligent tag suggestions based on vault patterns. Scans existing tags, suggests relevant ones, waits for confirmation, then creates note in Resources folder with proper frontmatter.
+Creates structured notes in Obsidian with intelligent tag suggestions based on vault patterns.
+Scans existing tags, suggests relevant ones, waits for confirmation, then creates note in Resources
+folder with proper frontmatter.
 
 ### verbalized-sampling
 
-Prompt engineering technique to overcome mode collapse in LLM responses by generating multiple answers with probabilities. Useful for creative tasks, brainstorming, and exploring alternative solutions.
+Prompt engineering technique to overcome mode collapse in LLM responses by generating multiple
+answers with probabilities. Useful for creative tasks, brainstorming, and exploring alternative
+solutions.
 
 ## Development Workflow
 
-This repository is primarily documentation-driven. There are no build commands, tests, or compilation steps.
+This repository is primarily documentation-driven; there is no application code to compile.
+
+Tooling is managed with [mise](https://github.com/jdx/mise) (tool versions + tasks) and
+[hk](https://github.com/jdx/hk) (git hooks):
+
+- `mise run bootstrap` — install pinned tools (`hk`, `pkl`, `rumdl`, `trufflehog`, `jq`) and
+  register hk git hooks.
+- `mise run sync` — sync the hook, settings, and user `CLAUDE.md` into `~/.claude` and
+  `~/.claude-dpg` (replaces the former `make sync`).
+- `hk` runs `pre-commit` automatically on commit: `rumdl` lints/auto-fixes Markdown and
+  `trufflehog` scans staged files for secrets. Run manually with `hk check` / `hk fix`.
 
 ### Making Changes
 
@@ -107,7 +128,8 @@ This repository is primarily documentation-driven. There are no build commands, 
 
 ### Version Management
 
-Increment the `metadata.version` field in frontmatter when making significant changes to a skill's workflow or capabilities.
+Increment the `metadata.version` field in frontmatter when making significant changes to a skill's
+workflow or capabilities.
 
 ## Git Conventions
 
