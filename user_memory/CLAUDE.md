@@ -96,6 +96,7 @@ Canonical tool list:
   workflow audit
 - **cfn-lint** + **cfn-guard** — CloudFormation lint/policy
 - **Renovate** — dependency + action-digest automation
+- **svu** — semantic-version bumps from conventional commits (release tagging)
 
 ### Core (every project)
 
@@ -122,6 +123,10 @@ Canonical tool list:
    plus lockfile maintenance. Group updates per package directory. Schedule weekly off-hours.
 7. **Config files.** `rumdl.toml` (markdown — see the Markdown note above for the line-length
    rule) and `typos.toml` (spell-check allowlist). Wrap markdown at 100 (code/tables exempt).
+8. **Release versioning — svu.** Compute the next semver tag from conventional-commit history
+   with `svu next` (Go, mise-pinned). CI tags the default branch from it
+   (`git tag "$(svu next)"`) — never hand-pick versions. Builds on the conventional-commits
+   convention already required in the Git section.
 
 ### Layer: Python
 
