@@ -77,6 +77,72 @@ rumdl check <filename.md>   # lint
 rumdl fmt <filename.md>     # autoformat violations
 ```
 
+## CI/CD & Tooling Standard
+
+Every project mirrors this setup. **mise** pins and installs every tool identically in dev and
+CI; **hk** git hooks give fast local parity; **GitHub Actions is the authoritative gate**;
+**Renovate** keeps action digests and lockfiles current. Apply the Core tier everywhere; add the
+Python / Frontend / AWS layers only where relevant.
+
+Canonical tool list:
+
+- **mise** — tool-version pinning + task runner
+- **hk** (pkl config) — git hooks
+- **ruff** + **ty** — Python lint/format + type check; **uv** for packaging
+- **oxlint** + **vitest** + **tsc** — frontend lint / test / typecheck
+- **rumdl** — markdown lint; **typos** — spell check
+- **trufflehog** — secret scanning (local hooks)
+- **semgrep** + **bandit** — SAST; **trivy** — deps/containers; **checkov** — IaC; **zizmor** —
+  workflow audit
+- **cfn-lint** + **cfn-guard** — CloudFormation lint/policy
+- **Renovate** — dependency + action-digest automation
+
+### Core (every project)
+
+1. **Tool versions — mise.** `mise.toml` `[tools]` pins every runtime and CLI (never install
+   tools ad-hoc). `[settings] lockfile = true` with a committed, multi-platform, checksummed
+   `mise.lock`. `[env]` holds only CI-safe vars (never `AWS_PROFILE` — it breaks OIDC in CI).
+   `[tasks]` is the sole task runner — no Makefile or justfile. Ship a `setup` task =
+   `mise install` + `hk install`. CI installs tools via `jdx/mise-action`, so dev and CI run
+   identical binaries.
+2. **Git hooks — hk.** `hk.pkl` (version-pinned). pre-commit = fast, per-file, auto-fixing:
+   whitespace/EOF, ruff + ruff-format, typos, rumdl, secret scan. pre-push = whole-program +
+   affected-only: typecheck, tests, secret scan on the git diff. Glob-scope steps per area so a
+   frontend-only change skips backend work. Hooks are the fast pre-filter; CI is the real gate.
+3. **Secret scanning — trufflehog.** Local-only in hk (filesystem on commit, git-diff vs the
+   default branch on push). Not duplicated in CI.
+4. **GitHub Actions hardening.** SHA-pin every action with a `# vX` comment. Least-privilege
+   `permissions:` at the workflow root (`contents: read`), widened per-job only as needed.
+   `persist-credentials: false` on every checkout. Concurrency groups cancel superseded PR runs.
+   A `ci.yml` gate runs lint + typecheck + tests + a coverage floor on every PR and push.
+5. **SAST — semgrep.** Run via `uvx` (the CE CLI, not a third-party action), emit SARIF, gate on
+   findings.
+6. **Dependency automation — Renovate.** Extend `config:recommended`,
+   `helpers:pinGitHubActionDigests`, and `:maintainLockFilesWeekly`. Automerge minor/patch/digest
+   plus lockfile maintenance. Group updates per package directory. Schedule weekly off-hours.
+7. **Config files.** `rumdl.toml` (markdown — see the Markdown note above for the line-length
+   rule) and `typos.toml` (spell-check allowlist). Wrap markdown at 100 (code/tables exempt).
+
+### Layer: Python
+
+uv + ruff + ty (per Python Tooling Preferences above). ruff and ty config live in
+`pyproject.toml`. pytest with a coverage floor (`--cov-fail-under`). Run ruff (check + format
+`--check`) and ty in both hk and CI. bandit for Python SAST, with severity/confidence thresholds
+passed as CLI flags.
+
+### Layer: Frontend
+
+oxlint (not ESLint) + vitest + `tsc -b`. Wire into hk (per-file lint on commit, typecheck and
+tests on push) and the CI gate.
+
+### Layer: AWS / IaC
+
+cfn-lint + cfn-guard (a policy-rules file) in hk pre-push and CI. A security-scans workflow runs
+checkov (IaC), trivy fs (deps/containers), and zizmor (audits the workflows themselves) — all
+emit SARIF, gated on aggregated findings, with a weekly CVE cron and PR summary comments. AWS
+auth via OIDC role assumption, never static keys. Deploy is pipeline-only (CI → S3 artifact →
+CodePipeline), consistent with the Infrastructure as Code section above.
+
 ## Autonomy
 
 Proceed without asking. Ask only before:
