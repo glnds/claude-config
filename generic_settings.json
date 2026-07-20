@@ -57,7 +57,7 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "$HOME/.claude/hooks/statusline.sh",
+    "command": "cship",
     "padding": 0
   },
   "skipDangerousModePermissionPrompt": true,

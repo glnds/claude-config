@@ -20,9 +20,6 @@ for DIR in "$HOME/.claude" "$HOME/.claude-dpg"; do
   cp hooks/block-commands.sh "$DIR/hooks/block-commands.sh"
   chmod +x "$DIR/hooks/block-commands.sh"
   echo "Installed hook -> $DIR/hooks/block-commands.sh"
-  cp hooks/statusline.sh "$DIR/hooks/statusline.sh"
-  chmod +x "$DIR/hooks/statusline.sh"
-  echo "Installed statusline -> $DIR/hooks/statusline.sh"
   SETTINGS="$DIR/settings.json"
   if [ -f "$SETTINGS" ]; then
     jq -s '.[0] + .[1]' "$SETTINGS" generic_settings.json > "$SETTINGS.tmp" && mv "$SETTINGS.tmp" "$SETTINGS"
