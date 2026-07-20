@@ -57,7 +57,7 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "npx -y ccusage statusline --context-low-threshold 20 --context-medium-threshold 60",
+    "command": "$HOME/.claude/hooks/statusline.sh",
     "padding": 0
   },
   "skipDangerousModePermissionPrompt": true,
