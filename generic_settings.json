@@ -6,6 +6,7 @@
     "CLAUDE_CODE_NO_FLICKER": "1"
   },
   "permissions": {
+    "defaultMode": "auto",
     "deny": [
       "Bash(make:*)",
       "Bash(make)",
@@ -16,8 +17,7 @@
       "Bash(AWS_PROFILE=*admin* *)",
       "Bash(AWS_DEFAULT_PROFILE=*admin* *)",
       "Bash(*aws *admin*)"
-    ],
-    "defaultMode": "plan"
+    ]
   },
   "hooks": {
     "PreToolUse": [
