@@ -140,6 +140,51 @@ The user-level `CLAUDE.md` carries the operational policy: required profile
 shape, allowed verbs, forbidden verbs, and the identity check run once per
 session.
 
+## Permissions and auto mode
+
+`generic_settings.json` runs Claude Code in auto mode (`permissions.defaultMode: "auto"`), which
+routes each tool call through a classifier after the deterministic permissions system has had its
+say. Three layers, each catching what the others cannot:
+
+| Layer | What it is | What it catches |
+|---|---|---|
+| `permissions.deny` | Deterministic rules, evaluated first | `make`/`gmake`, and `Read()` on credential paths (`~/.aws/credentials`, `~/.ssh`, `~/.gnupg`, `~/.kube`, `.env`) |
+| `hooks/block-commands.sh` | `PreToolUse` Bash hook, exit 2 blocks | `admin` AWS profiles via `--profile`, `--profile=`, `AWS_PROFILE=`, `AWS_DEFAULT_PROFILE=`; `make` behind env prefixes and shell separators. Fires even under `bypassPermissions`. |
+| `autoMode` | Natural-language classifier rules | The fuzzy, intent-level cases the other two cannot enumerate — any mutating AWS operation, any elevated identity, workstation applies |
+
+None of these is an enforcement boundary. The classifier is reasoning-blind by design: it sees user
+messages and tool calls, never command output, so it cannot know a profile is privileged from a fact
+that arrived via stdout, and nothing here stops a boto3 script or a renamed wrapper. Read-only is
+enforced at the IAM layer, as described above; these layers reduce accidental misexecution and give
+fast feedback.
+
+### The `autoMode` block
+
+Four array keys, all prose — the classifier reads them as natural-language rules, not as regex or
+tool patterns. One asymmetry decides how to edit them:
+
+- **`environment`** replaces all 21 built-in slots and must **not** contain `"$defaults"`. Keep the
+  exact `**Slot name**: value` shape, and leave a slot at its shipped default text rather than
+  guessing a value.
+- **`allow`**, **`soft_deny`**, **`hard_deny`** are additive and must start with the literal entry
+  `"$defaults"`. Omitting it discards every built-in rule in that section.
+
+`hard_deny` entries block unconditionally; `soft_deny` entries can be cleared by explicit user
+intent or by an `allow` entry. This repo sets two hard blocks (no AWS mutation, no elevated AWS
+identity) and one soft block (no `terraform apply` / `cdk deploy` / `sam deploy` from a workstation).
+
+The classifier reads `autoMode` from user settings, managed settings and `--settings` only — never
+from a project's `.claude/settings.json`, so a checked-in repo cannot inject its own allow rules.
+That is why this block ships through `mise run sync` into `~/.claude/settings.json`.
+
+Inspect it with:
+
+```bash
+claude auto-mode defaults    # the 21 built-in environment slots and every built-in rule
+claude auto-mode config      # the effective merged config
+claude auto-mode critique    # AI review of the custom rules
+```
+
 ## Repository Structure
 
 ```text

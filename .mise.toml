@@ -22,7 +22,10 @@ for DIR in "$HOME/.claude" "$HOME/.claude-dpg"; do
   echo "Installed hook -> $DIR/hooks/block-commands.sh"
   SETTINGS="$DIR/settings.json"
   if [ -f "$SETTINGS" ]; then
-    jq -s '.[0] + .[1]' "$SETTINGS" generic_settings.json > "$SETTINGS.tmp" && mv "$SETTINGS.tmp" "$SETTINGS"
+    # Shallow top-level merge, generic_settings.json wins. del() retires keys that
+    # were removed from generic_settings.json — a merge alone never drops them.
+    jq -s '.[0] + .[1] | del(.model, .skipDangerousModePermissionPrompt)' \
+      "$SETTINGS" generic_settings.json > "$SETTINGS.tmp" && mv "$SETTINGS.tmp" "$SETTINGS"
     echo "Merged generic_settings.json -> $SETTINGS"
   else
     cp generic_settings.json "$SETTINGS"
