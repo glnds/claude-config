@@ -170,8 +170,18 @@ tool patterns. One asymmetry decides how to edit them:
   `"$defaults"`. Omitting it discards every built-in rule in that section.
 
 `hard_deny` entries block unconditionally; `soft_deny` entries can be cleared by explicit user
-intent or by an `allow` entry. This repo sets two hard blocks (no AWS mutation, no elevated AWS
-identity) and one soft block (no `terraform apply` / `cdk deploy` / `sam deploy` from a workstation).
+intent or by an `allow` entry. This repo sets two hard blocks and adds nothing to the other three
+sections:
+
+- **AWS Mutation & IaC Apply** — no AWS state change and no `terraform`/`cdk`/`sam`/`pulumi` apply
+  from this machine, by any route. Read-only calls and read-only IaC (`plan`, `diff`, `synth`,
+  `cfn-lint`) are explicitly carved out, including the Terraform backend's own state-lock writes.
+- **Elevated AWS Identity** — no `admin` or otherwise privileged profile, no credential-env
+  override, no `aws sso login`, no `assume-role` into another role.
+
+Both are hard rather than soft because `CLAUDE.md` states them without exception, and because a hard
+rule is evaluated first — a soft rule saying the same thing would be dead code behind it. Keep the
+prose tight: these are read by a classifier on every tool call.
 
 The classifier reads `autoMode` from user settings, managed settings and `--settings` only — never
 from a project's `.claude/settings.json`, so a checked-in repo cannot inject its own allow rules.
