@@ -187,6 +187,23 @@ The classifier reads `autoMode` from user settings, managed settings and `--sett
 from a project's `.claude/settings.json`, so a checked-in repo cannot inject its own allow rules.
 That is why this block ships through `mise run sync` into `~/.claude/settings.json`.
 
+### Two seats
+
+`mise run sync` writes two config dirs: `~/.claude` (personal) and `~/.claude-dpg` (DPG Media work,
+launched via `claude-dpg-seat`, which sets `CLAUDE_CONFIG_DIR`). They are separate accounts, so the
+classifier's trust boundary is not the same in both.
+
+`generic_settings.json` describes the personal seat and is applied to both. `dpg_settings.json` is
+then layered onto the work seat through `overlay.jq`, which merges recursively but splices
+`autoMode.environment` **slot by slot**: an overlay entry replaces the base entry sharing its
+`**Slot name**:` prefix, and is appended if the base has no such slot. So the overlay lists only
+what genuinely differs — today the three identity slots, `Organization`, `Cloud provider(s)` and
+`CI/CD deploy targets` — while the 21-slot array and both hard rules stay defined once.
+
+The technical policy is shared on purpose: the same toolchain, the same read-only-AWS and
+IaC-through-CI posture apply to both, so `user_memory/CLAUDE.md` and the `hard_deny` rules are not
+split.
+
 Inspect it with:
 
 ```bash
@@ -204,7 +221,9 @@ claude-config/
 ├── .mise.toml             # mise tools (hk, pkl, rumdl, trufflehog, jq) + tasks
 ├── hk.pkl                 # hk git-hook config (pre-commit, check, fix)
 ├── .rumdl.toml            # rumdl config (markdown line-length 100)
-├── generic_settings.json  # Shared Claude settings merged on sync
+├── generic_settings.json  # Base Claude settings, applied to both seats
+├── dpg_settings.json      # Work-seat overlay (identity slots only)
+├── overlay.jq             # Slot-wise overlay merge used by `mise run sync`
 ├── hooks/
 │   └── block-commands.sh  # PreToolUse Bash guard
 ├── user_memory/

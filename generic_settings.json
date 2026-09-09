@@ -22,14 +22,14 @@
   },
   "autoMode": {
     "environment": [
-      "**Organization**: DPG Media",
+      "**Organization**: none — personal projects under github.com/glnds.",
       "**Primary use of Claude Code**: software development and AWS infrastructure work — application code plus IaC (Terraform, AWS CDK, CloudFormation, SAM)",
-      "**Cloud provider(s)**: AWS. The agent's identity is an IAM Identity Center SSO profile with the ReadOnlyAccess permission set (`assumed-role/AWSReservedSSO_ReadOnlyAccess`). It reads AWS state and never mutates it; changes go through IaC and the pipeline. `aws sso login` is the user's to run.",
+      "**Cloud provider(s)**: AWS, a personal account. The agent reads AWS state and never mutates it; changes go through IaC and CI. `aws sso login` is the user's to run.",
       "**Repository visibility**: assume private unless the remote host and repo name indicate otherwise, or a visibility check in the transcript shows public",
       "**Internal sharing / snippet hosting**: None configured — treat public paste/gist services as outside the trust boundary",
       "**Org-specific CLIs**: `mise` pins tool versions and is the only task runner; `hk` runs git hooks; `uv`, `ruff`, `ty` for Python; `rumdl` and `typos` for prose; `svu` for version tags; `cfn-lint` and `cfn-guard` for CloudFormation.",
       "**Secrets management**: None configured",
-      "**CI/CD deploy targets**: GitHub Actions is the authoritative gate; deploys run CI → S3 artifact → CodePipeline/CodeBuild, authenticating by OIDC rather than static keys. Drift is a bug in the IaC, fixed in code and redeployed rather than reconciled by hand.",
+      "**CI/CD deploy targets**: GitHub Actions. Deployment is pipeline-only — no apply or deploy from a workstation. Drift is a bug in the IaC, fixed in code and redeployed rather than reconciled by hand.",
       "**Network posture**: None configured",
       "**Host containment**: None configured — assume Claude Code runs on an ordinary developer machine or CI runner with open internet; if it runs inside a container/VM/pod with an egress allow-list, no network, or neighbours it must not touch, say so here (network setting and allowed hosts, whether the cloud metadata endpoint is meant to be reachable, which cloud project/cluster/registry the task operates and as what identity). Whatever is configured, instance-metadata credential paths and node/cluster credentials of the hosting layer are never task credentials unless this entry says the agent operates that identity (see Containment Escape). The classifier sees commands, not their output, so a declared-sealed box that is actually open cannot be caught here — enforce that in network configuration.",
       "**Protected deployment namespaces / environments**: None configured — fall back to the Sensitive remote targets heuristic",

@@ -1,0 +1,9 @@
+{
+  "autoMode": {
+    "environment": [
+      "**Organization**: DPG Media",
+      "**Cloud provider(s)**: AWS. The agent's identity is an IAM Identity Center SSO profile with the ReadOnlyAccess permission set (`assumed-role/AWSReservedSSO_ReadOnlyAccess`). It reads AWS state and never mutates it; changes go through IaC and the pipeline. `aws sso login` is the user's to run.",
+      "**CI/CD deploy targets**: GitHub Actions is the authoritative gate; deploys run CI → S3 artifact → CodePipeline/CodeBuild, authenticating by OIDC rather than static keys. Drift is a bug in the IaC, fixed in code and redeployed rather than reconciled by hand."
+    ]
+  }
+}

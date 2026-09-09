@@ -15,7 +15,13 @@ run = [
 [tasks.sync]
 description = "Sync hook, settings, and user CLAUDE.md into ~/.claude and ~/.claude-dpg"
 run = """
-for DIR in "$HOME/.claude" "$HOME/.claude-dpg"; do
+set -e
+# Each seat gets generic_settings.json, then its own overlay (if any) for the
+# identity slots that differ. ~/.claude is the personal seat; ~/.claude-dpg is
+# the DPG Media work seat, launched via `claude-dpg-seat` (CLAUDE_CONFIG_DIR).
+for ENTRY in "$HOME/.claude:" "$HOME/.claude-dpg:dpg_settings.json"; do
+  DIR="${ENTRY%%:*}"
+  OVERLAY="${ENTRY#*:}"
   mkdir -p "$DIR/hooks"
   cp hooks/block-commands.sh "$DIR/hooks/block-commands.sh"
   chmod +x "$DIR/hooks/block-commands.sh"
@@ -30,6 +36,10 @@ for DIR in "$HOME/.claude" "$HOME/.claude-dpg"; do
   else
     cp generic_settings.json "$SETTINGS"
     echo "Created $SETTINGS from generic_settings.json"
+  fi
+  if [ -n "$OVERLAY" ]; then
+    jq -s -f overlay.jq "$SETTINGS" "$OVERLAY" > "$SETTINGS.tmp" && mv "$SETTINGS.tmp" "$SETTINGS"
+    echo "Applied $OVERLAY -> $SETTINGS"
   fi
   cp user_memory/CLAUDE.md "$DIR/CLAUDE.md"
   echo "Installed user CLAUDE.md -> $DIR/CLAUDE.md"
