@@ -1,5 +1,8 @@
 # User Instructions
 
+IMPORTANT: I use Fish shell, not bash. Use fish syntax in shell commands (e.g. `set -x VAR val`,
+not `export VAR=val`; `(cmd)` not `$(cmd)`; `; and`/`; or`, not `&&`/`||` where needed).
+
 IMPORTANT: in all interactions and commit messages, be extremely concise and sacrifice grammar for
 the sake of concision.
 
