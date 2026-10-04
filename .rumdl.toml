@@ -1,2 +1,5 @@
 [MD013]
 line-length = 100
+[per-file-ignores]
+"CLAUDE.md" = ["MD041"]
+"user_memory/CLAUDE.md" = ["MD041"]

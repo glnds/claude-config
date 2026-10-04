@@ -39,8 +39,8 @@ patterns for tailored reviews.
 
 ### User Memory
 
-The `user_memory/CLAUDE.md` file contains user-level instructions that apply across all projects.
-Copy to `~/.claude/CLAUDE.md` for global application.
+The `user_memory/AGENTS.md` file contains user-level instructions that apply across all projects.
+Copy `user_memory/AGENTS.md` and the `CLAUDE.md` import stub to `~/.claude/` (`mise run sync`).
 
 **Key directives:**
 
@@ -216,7 +216,8 @@ claude auto-mode critique    # AI review of the custom rules
 
 ```text
 claude-config/
-├── CLAUDE.md              # Repo-level Claude instructions
+├── AGENTS.md              # Repo-level agent instructions (source)
+├── CLAUDE.md              # Imports AGENTS.md
 ├── README.md              # This file
 ├── .mise.toml             # mise tools (hk, pkl, rumdl, trufflehog, jq) + tasks
 ├── hk.pkl                 # hk git-hook config (pre-commit, check, fix)
@@ -227,7 +228,8 @@ claude-config/
 ├── hooks/
 │   └── block-commands.sh  # PreToolUse Bash guard
 ├── user_memory/
-│   └── CLAUDE.md          # User-level instructions (copy to ~/.claude/)
+│   ├── AGENTS.md          # User-level instructions (source)
+│   └── CLAUDE.md          # Imports AGENTS.md (copy both to ~/.claude/)
 └── skills/
     └── [skill-name]/
         ├── SKILL.md       # Skill definition
