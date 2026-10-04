@@ -81,6 +81,20 @@
             "type": "command",
             "command": "[ -n \"$TMUX_PANE\" ] && printf '\\a' > \"$(tmux display-message -p -t \"$TMUX_PANE\" '#{pane_tty}' 2>/dev/null)\" 2>/dev/null || true",
             "timeout": 1
+          },
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/docs-stop.sh"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOME/.claude/hooks/docs-start.sh"
           }
         ]
       }

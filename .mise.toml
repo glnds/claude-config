@@ -23,9 +23,11 @@ for ENTRY in "$HOME/.claude:" "$HOME/.claude-dpg:dpg_settings.json"; do
   DIR="${ENTRY%%:*}"
   OVERLAY="${ENTRY#*:}"
   mkdir -p "$DIR/hooks"
-  cp hooks/block-commands.sh "$DIR/hooks/block-commands.sh"
-  chmod +x "$DIR/hooks/block-commands.sh"
-  echo "Installed hook -> $DIR/hooks/block-commands.sh"
+  for HOOK in hooks/*.sh; do
+    cp "$HOOK" "$DIR/hooks/"
+    chmod +x "$DIR/hooks/$(basename "$HOOK")"
+    echo "Installed hook -> $DIR/hooks/$(basename "$HOOK")"
+  done
   SETTINGS="$DIR/settings.json"
   if [ -f "$SETTINGS" ]; then
     # Shallow top-level merge, generic_settings.json wins. del() retires keys that
