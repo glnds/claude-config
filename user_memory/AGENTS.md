@@ -129,7 +129,7 @@ Canonical tool list:
 8. **Release versioning — svu.** Compute the next semver tag from conventional-commit history
    with `svu next` (Go, mise-pinned). CI tags the default branch from it
    (`git tag "$(svu next)"`) — never hand-pick versions. Builds on the conventional-commits
-   convention already required in the Git section.
+   convention required by the Git row of the Autonomy table.
 
 ### Layer: Python
 
