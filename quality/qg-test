@@ -1,0 +1,38 @@
+#!/usr/bin/env -S uv run --quiet --script
+# /// script
+# requires-python = ">=3.11"
+# dependencies = []
+# ///
+"""Run the contract's `test` command and record red/green for the TDD gate."""
+import json
+import os
+import sys
+import time
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import qglib as q  # noqa: E402
+
+root = q.repo_root(os.getcwd())
+if root is None:
+    sys.exit("qg-test: not inside a Git repository")
+contract = q.load_contract(root)
+if contract is None:
+    sys.exit("qg-test: no .quality/contract.toml in this repository")
+if not q.is_trusted(root):
+    print("qg-test: the quality contract is not trusted. Ask the user to review .quality/ "
+          "and run ~/.claude/quality/qg-trust in their own terminal.", file=sys.stderr)
+    sys.exit(3)
+cmd = q.command(contract, "test")
+if cmd is None:
+    sys.exit("qg-test: the contract has no `test` command (skipped or unwired). "
+             f"Wire one up, see {q.TEMPLATES}.")
+
+rc, _ = q.run_command(root, q.render(cmd, args=sys.argv[1:]), capture=False)
+if rc in q.MISSING_TOOL:
+    print(f"qg-test: the test tooling is missing (exit {rc}). Install it with the project's "
+          "tool manager and retry. No red/green state was recorded.", file=sys.stderr)
+    sys.exit(rc)
+(q.state_dir(root) / "tdd.json").write_text(json.dumps(
+    {"last_run": "green" if rc == 0 else "red", "ts": time.time(), "args": sys.argv[1:]}))
+sys.exit(rc)

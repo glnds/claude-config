@@ -1,0 +1,30 @@
+#!/usr/bin/env -S uv run --quiet --script
+# /// script
+# requires-python = ">=3.11"
+# dependencies = []
+# ///
+"""Human-only approval of a repository's .quality/ directory."""
+import json
+import os
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import qglib as q  # noqa: E402
+
+if not (sys.stdin.isatty() and sys.stdout.isatty()):
+    sys.exit("qg-trust must be run by a human in an interactive terminal.")
+root = q.repo_root(os.getcwd())
+if root is None or q.load_contract(root) is None:
+    sys.exit("qg-trust: no .quality/contract.toml in this repository")
+
+print(f"Repository: {root}")
+for p in q.contract_files(root):
+    print(f"\n===== {p.relative_to(root)} =====\n{p.read_text(errors='replace')}")
+if input("\nTrust these files and run their commands? Type 'yes': ").strip() != "yes":
+    sys.exit("Not trusted.")
+
+trust = q.load_trust()
+trust[str(root)] = q.contract_hash(root)
+q.TRUST_FILE.write_text(json.dumps(trust, indent=2, sort_keys=True))
+print("Trusted.")

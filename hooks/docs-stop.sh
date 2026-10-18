@@ -3,6 +3,8 @@
 in=$(cat)
 [ "$(jq -r '.stop_hook_active // false' <<<"$in")" = "true" ] && exit 0
 git rev-parse --git-dir >/dev/null 2>&1 || exit 0
+# Repos with a quality contract get the docs principle from quality/stop_gate.py.
+[ -f "$(git rev-parse --show-toplevel)/.quality/contract.toml" ] && exit 0
 changed=$(git status --porcelain | awk '{print $NF}')
 [ -z "$changed" ] && exit 0
 grep -qiE '(^|/)(README|AGENTS|CLAUDE)\.md$|(^|/)docs/|\.md$' <<<"$changed" && exit 0

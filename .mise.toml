@@ -12,6 +12,10 @@ run = [
     "hk install",
 ]
 
+[tasks.test]
+description = "Smoke-test the quality-gate hooks against throwaway repositories"
+run = "bash quality/tests/smoke.sh"
+
 [tasks.sync]
 description = "Sync hook, settings, and user AGENTS.md (+ CLAUDE.md import) into ~/.claude and ~/.claude-dpg"
 run = """

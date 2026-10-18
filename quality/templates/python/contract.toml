@@ -1,0 +1,18 @@
+version = 1
+base = "origin/main"
+
+[paths]
+source = ["src/**"]
+tests  = ["tests/**", "**/test_*.py", "**/*_test.py", "**/conftest.py"]
+docs   = ["README*", "CHANGELOG*", "docs/**", "adr/**"]
+
+[commands]
+test          = "./.quality/test.sh {args}"
+diff_coverage = "./.quality/diff_coverage.sh {base}"
+docs_lint     = "uv run ruff check --select D1 src && uv run pydoclint src"
+mutation      = "uv run python .quality/mutation.py {base}"
+
+[mutation]
+report         = ".quality/out/mutation.json"
+threshold      = 0.8
+budget_seconds = 240
