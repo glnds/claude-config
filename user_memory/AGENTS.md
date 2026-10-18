@@ -200,3 +200,22 @@ and spec path as input, before invoking `subagent-driven-development`.
 Skip the review entirely on plans with fewer than three tasks, or tasks
 that modify a single file. The inline self-review in writing-plans already
 covers those cases.
+
+## Quality workflow (enforced by hooks, CI is authoritative)
+
+- Hooks in `~/.claude/quality/` enforce four principles: TDD, tests for changed lines, mutation
+  testing, up-to-date docs. Each repository wires them to its own tools in `.quality/`.
+- At session start, read the principle checklist and any open items from the last gate. Before
+  finishing, verify each principle for your change; the Stop gate checks the same list.
+- In repositories with a `.quality/` directory, work test-first: write or extend a failing test,
+  run it with `~/.claude/quality/qg-test [selectors]`, then implement. Always run tests through
+  qg-test, never the test tool directly.
+- Unwired principle or missing tool: pick a tool for the stack (see
+  `~/.claude/quality/templates/README.md`), install it with the project's tool manager, add it to
+  the contract, or record `{ skip = "reason" }`. No contract yet: propose one to the user.
+- Never change tests to make them pass unless the test itself is wrong; say so when it is.
+- Never edit `.quality/`, gate scripts or gate state to get past a check. Ask the user; only they
+  approve `.quality/` with `qg-trust`.
+- When the Stop gate reports findings, fix them. If you disagree with a finding, explain why in
+  one or two sentences instead of working around it.
+- User-visible changes need matching docs and a CHANGELOG entry.

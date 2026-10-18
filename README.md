@@ -212,6 +212,33 @@ claude auto-mode config      # the effective merged config
 claude auto-mode critique    # AI review of the custom rules
 ```
 
+## Quality gates
+
+`quality/` holds user-level hooks that wire a **methodology**, not tools, into every session. The
+hooks enforce four principles: TDD, tests for changed lines, mutation testing and up-to-date
+docs. Each repository declares in `.quality/contract.toml` how its own stack checks them. The
+hooks only run those commands and read exit codes and one normalised mutation report.
+
+| Event        | Script             | What it does                                                         |
+|--------------|--------------------|----------------------------------------------------------------------|
+| SessionStart | `session_start.py` | Resets TDD state; injects the principle checklist + open items       |
+| PreToolUse   | `tdd_gate.py`      | Protects gate files; source edits need a red `qg-test` run first     |
+| Stop         | `stop_gate.py`     | Verifies the same checklist; blocks at most once per change set      |
+
+The loop is designed to bring itself up:
+
+- A repo without a contract gets one onboarding block, then only a warning.
+- An unwired principle or a missing tool (exit 126/127) becomes a finding: Claude installs the
+  tool via the project's tool manager and adds it to the contract, or records
+  `{ skip = "reason" }`.
+- Open items from the last Stop show up at the next SessionStart, so nothing relies on a reminder.
+
+Contract commands only run after a human approves the exact `.quality/` contents with
+`~/.claude/quality/qg-trust`, which is denied to Claude. Hooks give feedback; CI with branch
+protection decides. `quality/templates/README.md` is the onboarding guide, and `python/` is the
+reference adapter. Hook scripts run with `uv run --script` (Python 3.11+, standard library only).
+Environment: `QG_TDD=on|strict|off`, `QG_MISSING_CONTRACT=onboard|warn|block|off`, `QG_HOME`.
+
 ## Repository Structure
 
 ```text
@@ -226,7 +253,19 @@ claude-config/
 ├── dpg_settings.json      # Work-seat overlay (identity slots only)
 ├── overlay.jq             # Slot-wise overlay merge used by `mise run sync`
 ├── hooks/
-│   └── block-commands.sh  # PreToolUse Bash guard
+│   ├── block-commands.sh  # PreToolUse Bash guard
+│   ├── docs-start.sh      # SessionStart: read project docs first
+│   └── docs-stop.sh       # Stop: docs nudge (repos without a quality contract)
+├── quality/               # Quality-gate hooks -> ~/.claude/quality/
+│   ├── qglib.py           # Shared helpers
+│   ├── session_start.py   # SessionStart: principle checklist
+│   ├── tdd_gate.py        # PreToolUse: red before green
+│   ├── stop_gate.py       # Stop: verify principles
+│   ├── qg-test, qg-trust  # Test wrapper; human-only contract approval
+│   ├── templates/         # Onboarding guide + Python reference adapter
+│   └── tests/smoke.sh     # `mise run test`
+├── agents/
+│   └── doc-auditor.md     # Read-only docs auditor used by the Stop gate
 ├── user_memory/
 │   ├── AGENTS.md          # User-level instructions (source)
 │   └── CLAUDE.md          # Imports AGENTS.md (copy both to ~/.claude/)
@@ -252,7 +291,8 @@ mise run bootstrap       # mise install (tools) + hk install (git hooks)
 
 ```bash
 mise tasks               # list available tasks
-mise run sync            # sync hook + settings + user CLAUDE.md into ~/.claude and ~/.claude-dpg
+mise run test            # smoke-test the quality-gate hooks
+mise run sync            # sync hooks, settings, agents, quality gate, user CLAUDE.md into both seats
 ```
 
 **Checks:**

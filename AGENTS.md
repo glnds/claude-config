@@ -20,9 +20,13 @@ claude-config/
 ├── CLAUDE.md                    # Imports AGENTS.md
 ├── README.md                    # Public documentation
 ├── LICENSE                      # MIT license
-├── .mise.toml                   # mise tools + tasks (bootstrap, sync)
+├── .mise.toml                   # mise tools + tasks (bootstrap, test, sync)
 ├── hk.pkl                       # hk git-hook config (rumdl + trufflehog)
 ├── .rumdl.toml                  # rumdl config (markdown line-length 100)
+├── quality/                     # Quality-gate hooks (see README "Quality gates")
+│   ├── templates/               # Contract onboarding guide + Python adapter
+│   └── tests/smoke.sh           # Hook smoke tests (`mise run test`)
+├── agents/                      # User-level subagents (doc-auditor)
 ├── user_memory/                 # User-specific agent instructions
 │   ├── AGENTS.md                # Personal preferences and guidelines (source)
 │   └── CLAUDE.md                # Imports AGENTS.md
@@ -116,8 +120,10 @@ Tooling is managed with [mise](https://github.com/jdx/mise) (tool versions + tas
 
 - `mise run bootstrap` — install pinned tools (`hk`, `pkl`, `rumdl`, `trufflehog`, `jq`) and
   register hk git hooks.
-- `mise run sync` — sync the hook, settings, and user `AGENTS.md` (+ `CLAUDE.md` import) into
-  `~/.claude` and `~/.claude-dpg` (replaces the former `make sync`).
+- `mise run sync` — sync the hooks, settings, agents and user `AGENTS.md` (+ `CLAUDE.md` import)
+  into `~/.claude` and `~/.claude-dpg`, and `quality/` into `~/.claude/quality/` (replaces the
+  former `make sync`). It never touches `~/.claude/quality/trusted.json`.
+- `mise run test` — smoke-test the quality-gate hooks; run it after changing `quality/`.
 - `hk` runs `pre-commit` automatically on commit: `rumdl` lints/auto-fixes Markdown and
   `trufflehog` scans staged files for secrets. Run manually with `hk check` / `hk fix`.
 

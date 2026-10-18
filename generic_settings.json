@@ -17,7 +17,11 @@
       "Read(~/.gnupg/**)",
       "Read(~/.kube/**)",
       "Read(./.env)",
-      "Read(./.env.*)"
+      "Read(./.env.*)",
+      "Bash(*qg-trust*)",
+      "Edit(~/.claude/quality/**)",
+      "Edit(~/.claude/settings.json)",
+      "Edit(~/.claude-dpg/settings.json)"
     ]
   },
   "autoMode": {
@@ -60,6 +64,16 @@
             "command": "$HOME/.claude/hooks/block-commands.sh"
           }
         ]
+      },
+      {
+        "matcher": "Edit|Write|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --quiet --script \"$HOME/.claude/quality/tdd_gate.py\"",
+            "timeout": 20
+          }
+        ]
       }
     ],
     "Notification": [
@@ -87,6 +101,16 @@
             "command": "$HOME/.claude/hooks/docs-stop.sh"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --quiet --script \"$HOME/.claude/quality/stop_gate.py\"",
+            "timeout": 900,
+            "statusMessage": "Quality gate: tests, coverage, docs, mutation"
+          }
+        ]
       }
     ],
     "SessionStart": [
@@ -95,6 +119,11 @@
           {
             "type": "command",
             "command": "$HOME/.claude/hooks/docs-start.sh"
+          },
+          {
+            "type": "command",
+            "command": "uv run --quiet --script \"$HOME/.claude/quality/session_start.py\"",
+            "timeout": 20
           }
         ]
       }
