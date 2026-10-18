@@ -228,7 +228,8 @@ hooks only run those commands and read exit codes and one normalised mutation re
 The loop is designed to bring itself up:
 
 - A repo without a contract gets one onboarding block, then only a warning.
-- An unwired principle or a missing tool (exit 126/127) becomes a finding: Claude installs the
+- An unwired principle or a missing tool (exit 126/127, or a wrapper like `uv run` reporting it)
+  becomes a finding: Claude installs the
   tool via the project's tool manager and adds it to the contract, or records
   `{ skip = "reason" }`.
 - Open items from the last Stop show up at the next SessionStart, so nothing relies on a reminder.

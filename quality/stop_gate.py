@@ -88,7 +88,7 @@ def run(name, timeout):
         rc, out = q.run_command(root, q.render(q.command(contract, name), base=base), timeout=timeout)
     except subprocess.TimeoutExpired:
         return "fail", f"`{name}` timed out after {timeout}s."
-    if rc in q.MISSING_TOOL:
+    if q.missing_tool(rc, out):
         return "missing-tool", q.tail(out)
     return ("pass" if rc == 0 else "fail"), q.tail(out)
 
@@ -156,7 +156,7 @@ if status["mutation"] == "checked" and not findings:
     try:
         rc, out = q.run_command(root, q.render(q.command(contract, "mutation"), base=base),
                                 timeout=int(m.get("budget_seconds", 240)))
-        if rc in q.MISSING_TOOL:
+        if q.missing_tool(rc, out):
             results["mutation"], findings["mutation"] = "missing-tool", missing_tool("mutation", q.tail(out))
         else:
             stats = json.loads(report.read_text())

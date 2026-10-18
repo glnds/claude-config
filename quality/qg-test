@@ -28,8 +28,9 @@ if cmd is None:
     sys.exit("qg-test: the contract has no `test` command (skipped or unwired). "
              f"Wire one up, see {q.TEMPLATES}.")
 
-rc, _ = q.run_command(root, q.render(cmd, args=sys.argv[1:]), capture=False)
-if rc in q.MISSING_TOOL:
+rc, out = q.run_command(root, q.render(cmd, args=sys.argv[1:]))
+print(out, end="")
+if q.missing_tool(rc, out):
     print(f"qg-test: the test tooling is missing (exit {rc}). Install it with the project's "
           "tool manager and retry. No red/green state was recorded.", file=sys.stderr)
     sys.exit(rc)

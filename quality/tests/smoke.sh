@@ -142,6 +142,12 @@ lacks "23 not reported as failing tests" "Tests fail"
 hook session_start.py "$START"; has "26 start shows open item" "Open from the last quality gate"
 has "26 open item names test" "test"
 
+# Wrappers such as `uv run` exit 2, not 127, when the tool is absent.
+write_contract 'uv run --no-project nonexistent-tool-xyz {args}' 'mutation = { skip = "no mature tool yet" }'; trust; touch src/h.py
+hook stop_gate.py "$STOP"; has "23b wrapped missing tool: says missing" "tooling for \`test\` is missing"
+lacks "23b not reported as failing tests" "Tests fail"
+qgtest; [ "$rc" != 0 ] && [ ! -f .git/qg/tdd.json ] && ok "23b qg-test records no red" || bad "23b qg-test recorded red"
+
 git add -A && git commit -qm docs && touch src/g.py  # only a code change pending
 out=$(cd "$A" && printf '{"stop_hook_active":false}' | bash "$REPO/hooks/docs-stop.sh" 2>"$ERR"); rc=$?
 silent "24 docs-stop.sh silent in contract repo"

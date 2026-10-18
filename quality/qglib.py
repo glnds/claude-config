@@ -7,6 +7,7 @@ import fnmatch
 import hashlib
 import json
 import os
+import re
 import shlex
 import signal
 import subprocess
@@ -20,6 +21,9 @@ TRUST_FILE = QG_HOME / "trusted.json"
 TEMPLATES = "~/.claude/quality/templates/README.md"
 EMPTY_TREE = "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
 MISSING_TOOL = (126, 127)  # sh: not executable / command not found
+# Wrappers report a missing tool with their own exit code (uv run: 2), so match their messages too.
+MISSING_TOOL_RE = re.compile(r"Failed to spawn|command not found|could not determine executable to run"
+                             r"|error: no such command|executable file not found")
 
 # Principles, in the order Claude meets them. Each maps to a contract command;
 # docs is always checked by the path trigger, docs_lint only adds to it.
@@ -167,6 +171,10 @@ def run_command(root, cmd, timeout=None, capture=True):
         p.communicate()
         raise
     return p.returncode, out or ""
+
+
+def missing_tool(rc, out):
+    return rc in MISSING_TOOL or (rc != 0 and bool(MISSING_TOOL_RE.search(tail(out, 4000))))
 
 
 def tail(text, n=2500):

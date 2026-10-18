@@ -28,8 +28,9 @@ mutation = { skip = "no mature mutation tool for this stack yet; CI runs it repo
 5. Ask the user to review `.quality/` and run `~/.claude/quality/qg-trust` in their own terminal.
 6. Run `~/.claude/quality/qg-test` once to confirm the `test` command works.
 
-When a command exits 126 or 127 (tool not found), the gate reports missing tooling: install it and
-retry. Any change to `.quality/` needs a new `qg-trust` approval.
+When a command exits 126 or 127, or a wrapper such as `uv run` or `npx` reports that the tool is
+not found, the gate reports missing tooling instead of a failure: install it and retry. Any change
+to `.quality/` needs a new `qg-trust` approval.
 
 ## Contract reference
 
