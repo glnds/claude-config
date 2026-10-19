@@ -20,8 +20,10 @@ data = q.read_hook_input()
 root = q.repo_root(data.get("cwd", "."))
 if root is None:
     sys.exit(0)
-if data.get("source") in ("startup", "clear"):  # resume, compact and fork keep the red/green state
+fresh = data.get("source") in ("startup", "clear")  # resume, compact and fork keep their state
+if fresh:
     (q.state_dir(root) / "tdd.json").unlink(missing_ok=True)
+q.record_session_head(root, data.get("session_id"), overwrite=fresh)
 
 contract = q.load_contract(root)
 if contract is None:

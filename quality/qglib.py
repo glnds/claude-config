@@ -130,11 +130,39 @@ def is_source(rel, contract):
     return matches(rel, paths.get("source")) and not matches(rel, paths.get("tests"))
 
 
-def merge_base(root, contract):
-    base = (contract or {}).get("base", "origin/main")
-    return (git(root, "merge-base", "HEAD", base)
-            or git(root, "rev-parse", "--verify", "-q", "HEAD")
-            or EMPTY_TREE)
+def default_base(root):
+    """The remote's default branch. origin/HEAD is only set by `git clone`, hence the fallbacks."""
+    head = git(root, "symbolic-ref", "-q", "--short", "refs/remotes/origin/HEAD")
+    if head:
+        return head
+    for ref in ("origin/main", "origin/master"):
+        if git(root, "rev-parse", "--verify", "-q", ref):
+            return ref
+    return "HEAD"
+
+
+def session_head_path(root, session_id):
+    return state_dir(root) / f"session-{session_id}.head"
+
+
+def record_session_head(root, session_id, overwrite):
+    p = session_head_path(root, session_id)
+    head = git(root, "rev-parse", "--verify", "-q", "HEAD")
+    if session_id and head and (overwrite or not p.exists()):
+        p.write_text(head)
+
+
+def merge_base(root, contract, session_id=None):
+    """Merge-base of HEAD and `base`, moved back to the session's start HEAD when that is older,
+    so work committed or pushed during the session stays in the change set."""
+    base = (contract or {}).get("base") or default_base(root)
+    mb = (git(root, "merge-base", "HEAD", base)
+          or git(root, "rev-parse", "--verify", "-q", "HEAD")
+          or EMPTY_TREE)
+    p = session_head_path(root, session_id) if session_id else None
+    if p and p.exists() and mb != EMPTY_TREE:
+        mb = git(root, "merge-base", mb, p.read_text().strip()) or mb
+    return mb
 
 
 def changed_files(root, base):

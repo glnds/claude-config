@@ -166,5 +166,28 @@ hook stop_gate.py "$STOPB"; has "19 later change: warning only" "systemMessage";
 hook session_start.py "{\"cwd\":\"$B\",\"session_id\":\"t\",\"source\":\"startup\"}"
 has "25 no contract: principles line" "no .quality/contract.toml"
 
+# Work committed (and pushed) during the session still counts: the session start anchors the change set.
+git add -A && git commit -qm wip
+hook session_start.py "{\"cwd\":\"$B\",\"session_id\":\"s2\",\"source\":\"startup\"}"
+echo 'package more' > more.go && git add -A && git commit -qm more
+hook stop_gate.py "{\"cwd\":\"$B\",\"session_id\":\"s2\",\"stop_hook_active\":false}"
+has "28 committed change, clean tree: onboarding block" '"decision": "block"'
+hook stop_gate.py "{\"cwd\":\"$B\",\"session_id\":\"s2\",\"stop_hook_active\":false}"
+silent "28 same change set: no output"
+
+# The onboarding reminder blocks once per session, not once per repository.
+hook session_start.py "{\"cwd\":\"$B\",\"session_id\":\"s3\",\"source\":\"startup\"}"
+echo 'package again' > again.go
+hook stop_gate.py "{\"cwd\":\"$B\",\"session_id\":\"s3\",\"stop_hook_active\":false}"
+has "29 new session: onboarding block again" '"decision": "block"'
+
+# --- Repository C: clone whose default branch is master, no `base` in the contract ------------
+R="$TMP/qg-remote.git" C="$TMP/qg-clone"
+git init -q --bare -b master "$R" && newrepo "$TMP/qg-seed" && git push -q "$R" HEAD:master
+git clone -q "$R" "$C" 2>/dev/null && cd "$C"
+echo 'package c' > c.go && git add -A && git commit -qm c
+hook stop_gate.py "{\"cwd\":\"$C\",\"session_id\":\"c\",\"stop_hook_active\":false}"
+has "30 base defaults to origin/master: committed change seen" '"decision": "block"'
+
 echo; echo "passed $pass, failed $fail"
 [ "$fail" = 0 ]

@@ -221,13 +221,15 @@ hooks only run those commands and read exit codes and one normalised mutation re
 
 | Event        | Script             | What it does                                                         |
 |--------------|--------------------|----------------------------------------------------------------------|
-| SessionStart | `session_start.py` | Resets TDD state; injects the principle checklist + open items       |
+| SessionStart | `session_start.py` | Resets TDD state, records HEAD; injects checklist + open items       |
 | PreToolUse   | `tdd_gate.py`      | Protects gate files; source edits need a red `qg-test` run first     |
 | Stop         | `stop_gate.py`     | Verifies the same checklist; blocks at most once per change set      |
 
 The loop is designed to bring itself up:
 
-- A repo without a contract gets one onboarding block, then only a warning.
+- The change set is everything since the merge-base with `base` (default: the remote's default
+  branch) or since the session started, whichever is older, so committed and pushed work counts.
+- A repo without a contract gets one onboarding block per session, then only a warning.
 - An unwired principle or a missing tool (exit 126/127, or a wrapper like `uv run` reporting it)
   becomes a finding: Claude installs the
   tool via the project's tool manager and adds it to the contract, or records

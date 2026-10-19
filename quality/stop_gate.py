@@ -31,7 +31,7 @@ if root is None:
     sys.exit(0)
 
 contract = q.load_contract(root)
-base = q.merge_base(root, contract)
+base = q.merge_base(root, contract, data.get("session_id"))
 changed, untracked = q.changed_files(root, base)
 if not changed:
     sys.exit(0)
@@ -50,13 +50,13 @@ if contract is None:
     remember()
     if mode == "off" or all(q.matches(f, q.DEFAULT_DOCS) for f in changed):
         sys.exit(0)
-    onboarded = q.state_dir(root) / "onboarded"
+    onboarded = q.state_dir(root) / f"onboarded-{data.get('session_id')}"
     if mode == "block" or (mode == "onboard" and not onboarded.exists()):
         onboarded.touch()
         block("This repository has no .quality/contract.toml, so this change is not checked against "
               "the quality principles (TDD, tests for changed lines, mutation testing, docs). Propose a "
               f".quality/ contract for this stack to the user (see {q.TEMPLATES}), or tell them briefly "
-              "why this repository does not need one. This reminder is shown once per repository.")
+              "why this repository does not need one. This reminder is shown once per session.")
     if mode in ("onboard", "warn"):
         notify("Quality gate skipped: no .quality/contract.toml in this repository.")
     sys.exit(0)

@@ -1,5 +1,5 @@
 version = 1
-base = "origin/main"
+# base = "origin/main"  # optional; defaults to the remote's default branch
 
 [paths]
 source = ["src/**"]

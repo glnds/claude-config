@@ -24,6 +24,8 @@ mutation = { skip = "no mature mutation tool for this stack yet; CI runs it repo
 2. Copy a template from this directory to `.quality/`, or write one for the stack using the
    table below. Keep helper scripts in `.quality/`, because trust covers the whole directory.
 3. Install the tools through the project's tool manager, never ad hoc, so CI gets the same tools.
+   A tool new to the project is a new dependency: propose it to the user, and until they approve,
+   record `{ skip = "awaiting approval of <tool>" }` instead of leaving the principle unwired.
 4. Add `.quality/out/` to `.gitignore`.
 5. Ask the user to review `.quality/` and run `~/.claude/quality/qg-trust` in their own terminal.
 6. Run `~/.claude/quality/qg-test` once to confirm the `test` command works.
@@ -36,7 +38,7 @@ to `.quality/` needs a new `qg-trust` approval.
 
 ```toml
 version = 1
-base = "origin/main"            # ref the change set is measured against
+base = "origin/main"            # optional; default: origin/HEAD, origin/main, origin/master
 
 [paths]                          # fnmatch globs on repo-relative paths; `*` also matches `/`
 source = ["src/**"]
@@ -55,8 +57,9 @@ threshold      = 0.8   # minimum killed / (killed + survived)
 budget_seconds = 240   # in-session time box; CI runs without it
 ```
 
-`{base}` is the merge-base SHA of `HEAD` and `base`. `{args}` holds the shell-quoted `qg-test`
-arguments. A file that matches both `source` and `tests` counts as a test.
+`{base}` is the merge-base SHA of `HEAD` and `base`, or the session's start `HEAD` when that is
+older, so work committed or pushed during the session stays in the change set. `{args}` holds
+the shell-quoted `qg-test` arguments. A file that matches both `source` and `tests` counts as a test.
 
 The `mutation` command writes this report. Timeouts count as killed:
 
