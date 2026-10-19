@@ -24,8 +24,9 @@ mutation = { skip = "no mature mutation tool for this stack yet; CI runs it repo
 2. Copy a template from this directory to `.quality/`, or write one for the stack using the
    table below. Keep helper scripts in `.quality/`, because trust covers the whole directory.
 3. Install the tools through the project's tool manager, never ad hoc, so CI gets the same tools.
-   A tool new to the project is a new dependency: propose it to the user, and until they approve,
-   record `{ skip = "awaiting approval of <tool>" }` instead of leaving the principle unwired.
+   Add it as a dev-only dependency. If the user's instructions require approval for new
+   dependencies and do not pre-approve quality tooling, propose it, and until they approve, record
+   `{ skip = "awaiting approval of <tool>" }` instead of leaving the principle unwired.
 4. Add `.quality/out/` to `.gitignore`.
 5. Ask the user to review `.quality/` and run `~/.claude/quality/qg-trust` in their own terminal.
 6. Run `~/.claude/quality/qg-test` once to confirm the `test` command works.

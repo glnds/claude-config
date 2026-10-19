@@ -173,7 +173,7 @@ Apply these decision defaults:
 | New file placement        | Follow existing directory structure; no new top-level directories           |
 | Naming and style          | Match codebase conventions                                                  |
 | Error handling            | Fail fast with descriptive messages; never swallow exceptions               |
-| Dependencies              | Use what is in the project; no new dependencies without explicit approval   |
+| Dependencies              | No new deps without approval; dev-only quality tooling is pre-approved      |
 | Scope                     | Smallest correct change; no adjacent fixes, no opportunistic refactors      |
 | Blocked after 3 attempts  | Write to `tasks/blocked.md`, continue with next task                        |
 | Stuck in a loop           | Step back, search for established patterns, adapt                           |
@@ -213,6 +213,9 @@ covers those cases.
 - Unwired principle or missing tool: pick a tool for the stack (see
   `~/.claude/quality/templates/README.md`), install it with the project's tool manager, add it to
   the contract, or record `{ skip = "reason" }`. No contract yet: propose one to the user.
+- Dev-only quality tooling (test runner, coverage, diff-coverage, mutation tool, doc linters) is
+  pre-approved: add it as a dev dependency via the project's tool manager without asking. It must
+  stay out of runtime dependencies and shipped artifacts; anything else still needs approval.
 - Never change tests to make them pass unless the test itself is wrong; say so when it is.
 - Never edit `.quality/`, gate scripts or gate state to get past a check. Ask the user; only they
   approve `.quality/` with `qg-trust`.
