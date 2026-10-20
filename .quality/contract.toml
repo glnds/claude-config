@@ -4,7 +4,7 @@ version = 1
 [paths]
 source = ["quality/*.py", "quality/qg-*", "hooks/*.sh"]
 tests  = ["quality/tests/**"]
-docs   = ["README*", "AGENTS.md", "user_memory/**", "agents/**", "quality/templates/README.md"]
+docs   = ["README*", "AGENTS.md", "user_memory/**", "agents/**", "quality/README.md", "quality/templates/README.md"]
 
 [commands]
 test          = "bash quality/tests/smoke.sh"  # runs the whole suite; selectors are not supported

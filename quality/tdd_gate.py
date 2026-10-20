@@ -45,7 +45,9 @@ if rel.startswith(".quality/") and not rel.startswith(".quality/out/"):
     decide("ask", "Changing .quality/ changes the quality gate. It needs human review and re-approval with qg-trust.")
 
 contract = q.load_contract(root)
-if contract is None or q.command(contract, "test") is None:  # no contract, or TDD skipped/unwired
+# No contract, TDD skipped or unwired, or an untrusted contract (qg-test cannot record red until
+# a human runs qg-trust; the Stop gate asks for that).
+if contract is None or q.command(contract, "test") is None or not q.is_trusted(root):
     sys.exit(0)
 mode = os.environ.get("QG_TDD", "on")
 if mode == "off":

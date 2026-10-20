@@ -214,6 +214,9 @@ claude auto-mode critique    # AI review of the custom rules
 
 ## Quality gates
 
+**Full guide: [`quality/README.md`](quality/README.md)** (principles, architecture, diagrams,
+contract reference, trust model, FAQ). Summary:
+
 `quality/` holds user-level hooks that wire a **methodology**, not tools, into every session. The
 hooks enforce four principles: TDD, tests for changed lines, mutation testing and up-to-date
 docs. Each repository declares in `.quality/contract.toml` how its own stack checks them. The
