@@ -1,0 +1,12 @@
+version = 1
+# base defaults to the remote's default branch (origin/master)
+
+[paths]
+source = ["quality/*.py", "quality/qg-*", "hooks/*.sh"]
+tests  = ["quality/tests/**"]
+docs   = ["README*", "AGENTS.md", "user_memory/**", "agents/**", "quality/templates/README.md"]
+
+[commands]
+test          = "bash quality/tests/smoke.sh"  # runs the whole suite; selectors are not supported
+diff_coverage = { skip = "hooks run as uv subprocesses; line coverage not collected yet", until = 2027-01-15 }
+mutation      = { skip = "no mutation tool wired for bash-driven hook tests yet", until = 2027-01-15 }

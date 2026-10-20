@@ -8,3 +8,6 @@ ehthumbs.db
 Thumbs.db
 
 .claude
+
+# quality gate output
+.quality/out/
