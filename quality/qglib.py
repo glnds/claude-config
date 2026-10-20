@@ -19,6 +19,7 @@ from pathlib import Path
 
 QG_HOME = Path(os.environ.get("QG_HOME", Path.home() / ".claude" / "quality"))
 TRUST_FILE = QG_HOME / "trusted.json"
+TRUST_KEEP = 20  # approved .quality/ versions remembered per repository
 TEMPLATES = "~/.claude/quality/templates/README.md"
 EMPTY_TREE = "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
 MISSING_TOOL = (126, 127)  # sh: not executable / command not found
@@ -148,8 +149,33 @@ def load_trust():
         return {}
 
 
+def repo_key(root):
+    """Trust key shared by all worktrees of a repository: its common Git directory."""
+    common = git(root, "rev-parse", "--path-format=absolute", "--git-common-dir")
+    return str(Path(common).resolve()) if common else str(root)
+
+
+def approved_hashes(trust, root):
+    """Every .quality/ version a human approved for this repository. Entries keyed by the
+    worktree path (the format before repo keys) still count."""
+    out = set()
+    for key in (repo_key(root), str(root)):
+        v = trust.get(key)
+        out.update(v if isinstance(v, list) else [v] if v else [])
+    return out
+
+
 def is_trusted(root):
-    return load_trust().get(str(root)) == contract_hash(root)
+    return contract_hash(root) in approved_hashes(load_trust(), root)
+
+
+def approve(root):
+    """Record the current .quality/ version as approved for this repository (qg-trust only)."""
+    trust, key, h = load_trust(), repo_key(root), contract_hash(root)
+    v = trust.get(key)
+    hashes = [x for x in (v if isinstance(v, list) else [v] if v else []) if x != h]
+    trust[key] = (hashes + [h])[-TRUST_KEEP:]
+    TRUST_FILE.write_text(json.dumps(trust, indent=2, sort_keys=True))
 
 
 def matches(rel, patterns):

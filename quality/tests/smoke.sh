@@ -29,8 +29,7 @@ qgtest() { out=$("$QG_HOME/qg-test" 2>"$ERR"); rc=$?; }
 trust() {
   uv run --quiet --no-project --python '>=3.11' python -c "
 import sys, json; sys.path.insert(0, '$QG_HOME'); import qglib as q
-r = q.repo_root('.'); t = q.load_trust(); t[str(r)] = q.contract_hash(r)
-q.TRUST_FILE.write_text(json.dumps(t))"
+q.approve(q.repo_root('.'))"
 }
 newrepo() { rm -rf "$1" && mkdir -p "$1" && cd "$1" && git init -q && git commit -q --allow-empty -m init; }
 
@@ -121,6 +120,9 @@ hook session_start.py "$START"; has "16 context mentions qg-test" "qg-test"
 
 echo '# changed' >> .quality/flag.sh; qgtest
 [ "$rc" = 3 ] && ok "17 changed .quality/: qg-test exit 3" || bad "17 expected exit 3"
+# Untrusted contract: qg-test cannot record red, so the TDD gate must not lock source edits.
+rm -f .git/qg/tdd.json
+hook tdd_gate.py "$(edit "$A/src/a.py")"; silent "17b untrusted contract: TDD gate allows source edits"
 
 out=$(echo yes | "$QG_HOME/qg-trust" 2>&1); rc=$?
 [ "$rc" != 0 ] && ok "18 qg-trust refuses without TTY" || bad "18 qg-trust ran without TTY"
@@ -210,6 +212,27 @@ hook session_start.py "{\"cwd\":\"$B\",\"session_id\":\"s3\",\"source\":\"startu
 echo 'package again' > again.go
 hook stop_gate.py "{\"cwd\":\"$B\",\"session_id\":\"s3\",\"stop_hook_active\":false}"
 has "29 new session: onboarding block again" '"decision": "block"'
+
+# --- Repository D: approvals are shared by worktrees of one repository ------------------------
+D="$TMP/qg-wt-main"
+newrepo "$D"
+mkdir -p .quality && printf 'version = 1\n[paths]\nsource = ["src/**"]\n[commands]\ntest = "true"\n' > .quality/contract.toml
+git add -A && git commit -qm contract && trust
+git worktree add -q "$TMP/qg-wt-feature" -b feature && cd "$TMP/qg-wt-feature"
+qgtest; [ "$rc" = 0 ] && ok "37 worktree with approved contract: trusted" || bad "37 worktree not trusted (rc=$rc)"
+echo '# changed in worktree' >> .quality/contract.toml; qgtest
+[ "$rc" = 3 ] && ok "37 worktree with changed contract: not trusted" || bad "37 changed contract trusted (rc=$rc)"
+trust; cd "$D"; qgtest
+[ "$rc" = 0 ] && ok "37 approving a new version keeps the old one" || bad "37 main lost its approval (rc=$rc)"
+
+# Approvals stored by folder path before repository keys existed still count.
+E="$TMP/qg-legacy"
+newrepo "$E"
+mkdir -p .quality && cp "$D/.quality/contract.toml" .quality/
+uv run --quiet --no-project --python '>=3.11' python -c "
+import sys, json; sys.path.insert(0, '$QG_HOME'); import qglib as q
+r = q.repo_root('.'); t = q.load_trust(); t[str(r)] = q.contract_hash(r); q.TRUST_FILE.write_text(json.dumps(t))"
+qgtest; [ "$rc" = 0 ] && ok "38 legacy path approval: trusted" || bad "38 legacy approval ignored (rc=$rc)"
 
 # --- Repository C: clone whose default branch is master, no `base` in the contract ------------
 R="$TMP/qg-remote.git" C="$TMP/qg-clone"
