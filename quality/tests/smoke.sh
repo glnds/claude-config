@@ -6,6 +6,7 @@ set -u
 REPO=$(cd "$(dirname "$0")/../.." && pwd -P)
 TMP=$(cd "$(mktemp -d)" && pwd -P)
 export QG_HOME="$TMP/qg-home"
+export QG_TODAY=2026-06-01  # fixed "today" so skip expiry is deterministic
 cp -R "$REPO/quality" "$QG_HOME" && rm -rf "$QG_HOME/tests" "$QG_HOME/trusted.json"
 ERR="$TMP/stderr"
 trap 'rm -rf "$TMP"' EXIT
@@ -37,7 +38,7 @@ newrepo() { rm -rf "$1" && mkdir -p "$1" && cd "$1" && git init -q && git commit
 A="$TMP/qg-smoke"
 newrepo "$A"
 mkdir -p .quality/out src tests && echo '.quality/out/' > .gitignore
-write_contract() { # write_contract <test cmd> <mutation line>
+write_contract() { # write_contract <test cmd> <mutation line> [extra [mutation] lines]
   cat > .quality/contract.toml <<EOF
 version = 1
 base = "HEAD"
@@ -53,12 +54,13 @@ $2
 report = ".quality/out/mutation.json"
 threshold = 0.8
 budget_seconds = 5
+${3:-}
 EOF
 }
 write_contract 'sh .quality/flag.sh test {args}' 'mutation      = "sh .quality/mut.sh"'
 # A step fails when .quality/out/fail-<step> exists.
 echo '[ ! -f ".quality/out/fail-$1" ]' > .quality/flag.sh
-printf '%s\n' '[ -f .quality/out/slow ] && sleep 30' \
+printf '%s\n' '[ -f .quality/out/slow ] && sleep 37' \
   'cp .quality/out/mut-fixture.json .quality/out/mutation.json' > .quality/mut.sh
 echo '{"killed": 9, "survived": 1}' > .quality/out/mut-fixture.json
 
@@ -93,7 +95,7 @@ touch .quality/out/slow src/c.py
 t0=$SECONDS
 hook stop_gate.py "$STOP"; has "8 mutation deferred" "deferred to CI"
 [ $((SECONDS - t0)) -lt 20 ] && ok "8 within time budget" || bad "8 took $((SECONDS - t0))s"
-pgrep -f "sleep 30" >/dev/null && bad "8 sleep left running" || ok "8 no sleep left running"
+pgrep -f "sleep 37" >/dev/null && bad "8 sleep left running" || ok "8 no sleep left running"
 
 rm -f .quality/out/slow .git/qg/tdd.json
 hook tdd_gate.py "$(edit "$A/src/a.py")"; has "9 no run recorded: deny" '"permissionDecision": "deny"'
@@ -129,21 +131,21 @@ hook stop_gate.py "$STOP"; has "21 unwired mutation: block" '"decision": "block"
 has "21 says no check" "no check"
 hook session_start.py "$START"; has "25 start lists unwired" "[unwired] mutation"
 
-write_contract 'sh .quality/flag.sh test {args}' 'mutation = { skip = "no mature tool yet" }'; trust; touch src/e.py
+write_contract 'sh .quality/flag.sh test {args}' 'mutation = { skip = "no mature tool yet", until = 2026-07-01 }'; trust; touch src/e.py
 hook stop_gate.py "$STOP"; silent "22 skipped mutation: no finding"
-hook session_start.py "$START"; has "25 start lists skipped" "[skipped: no mature tool yet] mutation"
+hook session_start.py "$START"; has "25 start lists skipped" "[skipped until 2026-07-01: no mature tool yet] mutation"
 lacks "27 nothing open after a pass" "Open from the last quality gate"
 has "25 start lists checked" "[checked] test"
 has "25 start states end rule" "Before you finish"
 
-write_contract 'nonexistent-tool-xyz {args}' 'mutation = { skip = "no mature tool yet" }'; trust; touch src/f.py
+write_contract 'nonexistent-tool-xyz {args}' 'mutation = { skip = "no mature tool yet", until = 2026-07-01 }'; trust; touch src/f.py
 hook stop_gate.py "$STOP"; has "23 missing tool: block" '"decision": "block"'; has "23 says missing" "missing"
 lacks "23 not reported as failing tests" "Tests fail"
 hook session_start.py "$START"; has "26 start shows open item" "Open from the last quality gate"
 has "26 open item names test" "test"
 
 # Wrappers such as `uv run` exit 2, not 127, when the tool is absent.
-write_contract 'uv run --no-project nonexistent-tool-xyz {args}' 'mutation = { skip = "no mature tool yet" }'; trust; touch src/h.py
+write_contract 'uv run --no-project nonexistent-tool-xyz {args}' 'mutation = { skip = "no mature tool yet", until = 2026-07-01 }'; trust; touch src/h.py
 hook stop_gate.py "$STOP"; has "23b wrapped missing tool: says missing" "tooling for \`test\` is missing"
 lacks "23b not reported as failing tests" "Tests fail"
 qgtest; [ "$rc" != 0 ] && [ ! -f .git/qg/tdd.json ] && ok "23b qg-test records no red" || bad "23b qg-test recorded red"
@@ -151,6 +153,34 @@ qgtest; [ "$rc" != 0 ] && [ ! -f .git/qg/tdd.json ] && ok "23b qg-test records n
 git add -A && git commit -qm docs && touch src/g.py  # only a code change pending
 out=$(cd "$A" && printf '{"stop_hook_active":false}' | bash "$REPO/hooks/docs-stop.sh" 2>"$ERR"); rc=$?
 silent "24 docs-stop.sh silent in contract repo"
+
+# --- Skips expire; partial skips by path --------------------------------------------------------
+write_contract 'sh .quality/flag.sh test {args}' 'mutation = { skip = "too slow" }'; trust; touch src/i.py
+hook stop_gate.py "$STOP"; has "31 undated skip: block" '"decision": "block"'; has "31 asks for until" "no valid \`until\`"
+hook session_start.py "$START"; has "31 start flags undated skip" "[undated skip: too slow] mutation"
+
+write_contract 'sh .quality/flag.sh test {args}' 'mutation = { skip = "too slow", until = 2026-05-01 }'; trust; touch src/j.py
+hook stop_gate.py "$STOP"; has "32 expired skip: block" "expired on 2026-05-01"
+has "32 slowness is no reason" "not a reason"
+
+write_contract 'sh .quality/flag.sh test {args}' 'mutation = { skip = "later", until = 2026-12-31 }'; trust; touch src/k.py
+hook stop_gate.py "$STOP"; has "33 skip too far out: block" "more than 90 days"
+
+PARTIAL='skip_paths = { paths = ["src/backend/**"], reason = "needs testcontainers", until = 2026-07-01 }'
+echo '{"killed": 5, "survived": 5}' > .quality/out/mut-fixture.json
+write_contract 'sh .quality/flag.sh test {args}' 'mutation      = "sh .quality/mut.sh"' "$PARTIAL"; trust
+git add -A && git commit -qm partial && hook session_start.py "$START"  # re-anchor: change set = what follows
+mkdir -p src/backend src/front && touch src/backend/x.py && echo more >> README.md
+hook stop_gate.py "$STOP"; silent "34 change only in skipped path: mutation not run"
+hook session_start.py "$START"; has "34 start lists partial skip" "[partial skip until 2026-07-01: src/backend/** (needs testcontainers)] mutation"
+touch src/front/y.py
+hook stop_gate.py "$STOP"; has "35 change outside skipped path: mutation runs" "Mutation score 50% is below 80%"
+
+write_contract 'sh .quality/flag.sh test {args}' 'mutation      = "sh .quality/mut.sh"' \
+  'skip_paths = { paths = ["src/backend/**"], reason = "needs testcontainers", until = 2026-05-01 }'; trust
+touch src/backend/z.py
+hook stop_gate.py "$STOP"; has "36 expired partial skip: block" "expired on 2026-05-01"
+echo '{"killed": 9, "survived": 1}' > .quality/out/mut-fixture.json
 
 # --- Repository B: no contract (onboarding) ---------------------------------------------------
 B="$TMP/qg-nocontract"

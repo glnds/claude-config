@@ -32,9 +32,16 @@ if contract is None:
          f"the user for this stack (see {q.TEMPLATES}).")
 
 lines = ["Quality principles for this repository (.quality/contract.toml):"]
-for name, status in q.principles(contract):
-    hint = f" -> wire up a check ({q.TEMPLATES}) or record {{ skip = \"reason\" }}" if status == "unwired" else ""
-    lines.append(f"- [{status}] {name}: {q.PRINCIPLES[name]}{hint}")
+hints = {"unwired": f" -> wire up a check ({q.TEMPLATES}) or record a dated skip",
+         "expired": " -> wire up the check, or renew the skip if the reason still holds",
+         "undated": f" -> skips must expire: set `until` within {q.SKIP_MAX_DAYS} days"}
+for name, kind, label in q.principles(contract):
+    lines.append(f"- [{label}] {name}: {q.PRINCIPLES[name]}{hints.get(kind, '')}")
+partial = q.partial_skip(contract)
+if partial:
+    lines.append(f"- [{partial[1]}] mutation{hints.get(partial[0], '')}")
+if any(kind != "checked" for _, kind, _ in q.principles(contract)) or partial:
+    lines.append("Skips are debt: when your change touches a skipped area, try to wire the check.")
 open_items = q.open_items(root)
 if open_items:
     lines.append("Open from the last quality gate: "

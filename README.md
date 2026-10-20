@@ -231,9 +231,11 @@ The loop is designed to bring itself up:
   branch) or since the session started, whichever is older, so committed and pushed work counts.
 - A repo without a contract gets one onboarding block per session, then only a warning.
 - An unwired principle or a missing tool (exit 126/127, or a wrapper like `uv run` reporting it)
-  becomes a finding: Claude installs the
-  tool via the project's tool manager and adds it to the contract, or records
-  `{ skip = "reason" }`.
+  becomes a finding: Claude installs the tool via the project's tool manager and adds it to the
+  contract, or records a dated skip.
+- Skips are debt: `{ skip = "reason", until = <date> }` with `until` at most 90 days out, or
+  `[mutation] skip_paths` to excuse one area only. An expired or undated skip counts as unwired
+  again. Slowness is never a reason: runs over budget are deferred to CI.
 - Open items from the last Stop show up at the next SessionStart, so nothing relies on a reminder.
 
 Contract commands only run after a human approves the exact `.quality/` contents with

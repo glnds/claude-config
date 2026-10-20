@@ -212,7 +212,8 @@ covers those cases.
   qg-test, never the test tool directly.
 - Unwired principle or missing tool: pick a tool for the stack (see
   `~/.claude/quality/templates/README.md`), install it with the project's tool manager, add it to
-  the contract, or record `{ skip = "reason" }`. No contract yet: propose one to the user.
+  the contract, or record a dated skip (`until` ≤ 90 days; `skip_paths` for one area). Slowness is
+  never a skip reason. No contract yet: propose one to the user.
 - Dev-only quality tooling (test runner, coverage, diff-coverage, mutation tool, doc linters) is
   pre-approved: add it as a dev dependency via the project's tool manager without asking. It must
   stay out of runtime dependencies and shipped artifacts; anything else still needs approval.

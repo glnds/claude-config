@@ -68,14 +68,24 @@ if not any(q.is_source(f, contract) for f in changed):
     remember()
     sys.exit(0)
 
-status = dict(q.principles(contract))
-results, findings = {}, {}  # principle -> pass|fail|missing-tool|deferred|unwired|skipped|not-run
+status = {name: (kind, label) for name, kind, label in q.principles(contract)}
+results, findings = {}, {}  # principle -> pass|fail|missing-tool|deferred|unwired|expired|undated|skipped|not-run
+skip_note = {}  # principle -> label shown for a skip in the checklist
+SKIP_FORM = f'{{ skip = "<reason>", until = <date within {q.SKIP_MAX_DAYS} days> }}'
 
 
-def unwired(name):
-    return (f"Principle `{name}` ({q.PRINCIPLES[name]}) has no check here. Choose a tool for this "
-            f"stack (see {q.TEMPLATES}), install it with the project's tool manager and add it to "
-            f"[commands] in .quality/contract.toml, or record `{name} = {{ skip = \"<reason>\" }}`.")
+def unwired(name, kind="unwired", label=""):
+    wire = (f"Choose a tool for this stack (see {q.TEMPLATES}), install it with the project's tool "
+            f"manager and add it to [commands] in .quality/contract.toml")
+    if kind == "expired":
+        return (f"The {label}. Wire a check for `{name}` now ({wire}), or renew the skip with a new "
+                f"`until` if the reason still holds. Slowness is not a reason: the gate defers slow "
+                f"runs to CI.")
+    if kind == "undated":
+        return (f"The {label} has no valid `until` date. Skips are debt and must expire: set `until` "
+                f"within {q.SKIP_MAX_DAYS} days, or better, wire the check ({wire}).")
+    return (f"Principle `{name}` ({q.PRINCIPLES[name]}) has no check here. {wire}, or record "
+            f"`{name} = {SKIP_FORM}`.")
 
 
 def missing_tool(name, out):
@@ -101,7 +111,7 @@ def checklist():
         if r == "pass":
             lines.append(f"[x] {name}")
         elif r == "skipped":
-            lines.append(f"[-] {name} ({status[name]})")
+            lines.append(f"[-] {name} ({skip_note.get(name, status[name][1])})")
         elif name in findings:
             lines.append(f"[ ] {name}\n    " + findings[name].replace("\n", "\n    "))
         else:
@@ -116,12 +126,22 @@ def finish():
 
 
 for name in q.CONTRACT_PRINCIPLES:
-    if status[name] == "unwired":
-        results[name], findings[name] = "unwired", unwired(name)
-    elif status[name] != "checked":
+    kind, label = status[name]
+    if kind in ("unwired", "expired", "undated"):
+        results[name], findings[name] = kind, unwired(name, kind, label)
+    elif kind == "skipped":
         results[name] = "skipped"
 
-if status["test"] == "checked":
+partial = q.partial_skip(contract)
+if partial and status["mutation"][0] == "checked":
+    kind, label, paths = partial
+    if kind == "skipped":
+        if not any(q.is_source(f, contract) and not q.matches(f, paths) for f in changed):
+            results["mutation"], skip_note["mutation"] = "skipped", label
+    else:  # an expired or undated partial skip stops excusing its paths
+        results["mutation"], findings["mutation"] = kind, unwired("mutation", kind, label)
+
+if status["test"][0] == "checked":
     results["test"], out = run("test", 240)
     if results["test"] != "pass":  # digest not recorded: failing tests are re-checked next turn
         q.write_last_gate(root, digest, results)
@@ -129,7 +149,7 @@ if status["test"] == "checked":
             block(missing_tool("test", out))
         block("Tests fail. Fix the implementation, not the tests, unless a test is wrong:\n\n" + out)
 
-if status["diff_coverage"] == "checked":
+if status["diff_coverage"][0] == "checked":
     results["diff_coverage"], out = run("diff_coverage", 300)
     if results["diff_coverage"] == "fail":
         findings["diff_coverage"] = "Changed lines are not covered well enough. Add tests for them:\n" + out
@@ -149,7 +169,7 @@ if q.command(contract, "docs_lint"):
             findings.get("docs"),
             missing_tool("docs_lint", out) if r == "missing-tool" else "Documentation checks failed:\n" + out]))
 
-if status["mutation"] == "checked" and not findings:
+if status["mutation"][0] == "checked" and "mutation" not in results and not findings:
     m = contract.get("mutation", {})
     report = root / m.get("report", ".quality/out/mutation.json")
     report.unlink(missing_ok=True)

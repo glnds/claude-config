@@ -14,6 +14,7 @@ import subprocess
 import sys
 import time
 import tomllib
+from datetime import date
 from pathlib import Path
 
 QG_HOME = Path(os.environ.get("QG_HOME", Path.home() / ".claude" / "quality"))
@@ -34,6 +35,7 @@ PRINCIPLES = {
     "docs": "user-visible changes are reflected in README, docs, CHANGELOG or ADRs",
 }
 CONTRACT_PRINCIPLES = ("test", "diff_coverage", "mutation")
+SKIP_MAX_DAYS = 90
 DEFAULT_DOCS = ["*.md", "docs/**"]
 
 
@@ -79,19 +81,51 @@ def command(contract, name):
     return v if isinstance(v, str) and v.strip() else None
 
 
+def today():
+    return date.fromisoformat(os.environ["QG_TODAY"]) if os.environ.get("QG_TODAY") else date.today()
+
+
+def skip_state(reason, until, what="skip"):
+    """(kind, label) for a skip: kind is 'skipped', 'expired' or 'undated'. Skips are debt, so
+    they must expire within SKIP_MAX_DAYS; an expired or undated skip counts as unwired."""
+    try:
+        d = until if isinstance(until, date) else date.fromisoformat(str(until)) if until else None
+    except ValueError:
+        d = None
+    if d is None:
+        return "undated", f"undated {what}: {reason}"
+    if d < today():
+        return "expired", f"{what} expired on {d}: {reason}"
+    if (d - today()).days > SKIP_MAX_DAYS:
+        return "undated", f"undated {what}: {reason} (until {d} is more than {SKIP_MAX_DAYS} days out)"
+    return "skipped", f"{'skipped' if what == 'skip' else what} until {d}: {reason}"
+
+
 def principles(contract):
-    """[(name, status)] with status 'checked', 'skipped: <reason>' or 'unwired'."""
+    """[(name, kind, label)]; kind is checked, skipped, expired, undated or unwired."""
     out = []
     for name in CONTRACT_PRINCIPLES:
         v = contract.get("commands", {}).get(name)
         if command(contract, name):
-            out.append((name, "checked"))
+            out.append((name, "checked", "checked"))
         elif isinstance(v, dict) and v.get("skip"):
-            out.append((name, f"skipped: {v['skip']}"))
+            out.append((name, *skip_state(v["skip"], v.get("until"))))
         else:
-            out.append((name, "unwired"))
-    out.append(("docs", "checked"))
+            out.append((name, "unwired", "unwired"))
+    out.append(("docs", "checked", "checked"))
     return out
+
+
+def partial_skip(contract):
+    """(kind, label, paths) for `[mutation] skip_paths`, or None. Changes only in these paths do
+    not trigger mutation testing until the skip expires."""
+    sp = (contract or {}).get("mutation", {}).get("skip_paths")
+    if not isinstance(sp, dict) or not sp.get("paths"):
+        return None
+    paths = list(sp["paths"])
+    kind, label = skip_state(f"{', '.join(paths)} ({sp.get('reason', 'no reason given')})",
+                             sp.get("until"), "partial skip")
+    return kind, label, paths
 
 
 def contract_files(root):
