@@ -1,0 +1,43 @@
+#!/usr/bin/env -S uv run --quiet --script
+# /// script
+# requires-python = ">=3.11"
+# dependencies = []
+# ///
+"""Run the contract's `mutation` command and apply its threshold; for `[mutation] stage = "pre-push"`.
+
+Call it from the repository's pre-push hook. Base: argv[1], else the contract's `base` or the
+remote's default branch. Exit 0 pass, 1 below threshold or no report, 3 untrusted contract."""
+import os
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import qglib as q  # noqa: E402
+
+root = q.repo_root(os.getcwd())
+if root is None:
+    sys.exit("qg-mutation: not inside a Git repository")
+contract = q.load_contract(root)
+if contract is None:
+    sys.exit("qg-mutation: no .quality/contract.toml in this repository")
+if not q.is_trusted(root):
+    print("qg-mutation: the quality contract is not trusted. Ask the user to review .quality/ "
+          "and run ~/.claude/quality/qg-trust in their own terminal.", file=sys.stderr)
+    sys.exit(3)
+cmd = q.command(contract, "mutation")
+if cmd is None:
+    print("qg-mutation: the contract has no `mutation` command (skipped or unwired).")
+    sys.exit(0)
+
+base = sys.argv[1] if len(sys.argv) > 1 else q.merge_base(root, contract)
+q.mutation_report(root, contract).unlink(missing_ok=True)
+rc, out = q.run_command(root, q.render(cmd, base=base))
+if q.missing_tool(rc, out):
+    print(q.tail(out), file=sys.stderr)
+    print(f"qg-mutation: the mutation tooling is missing (exit {rc}).", file=sys.stderr)
+    sys.exit(rc)
+result, finding = q.mutation_verdict(root, contract)
+if result != "pass":
+    print(finding, file=sys.stderr)
+    sys.exit(1)
+print("qg-mutation: pass")

@@ -169,33 +169,24 @@ if q.command(contract, "docs_lint"):
             findings.get("docs"),
             missing_tool("docs_lint", out) if r == "missing-tool" else "Documentation checks failed:\n" + out]))
 
+if status["mutation"][0] == "checked" and "mutation" not in results and q.mutation_stage(contract) != "stop":
+    results["mutation"] = "deferred"  # runs on pre-push through qg-mutation
 if status["mutation"][0] == "checked" and "mutation" not in results and not findings:
     m = contract.get("mutation", {})
-    report = root / m.get("report", ".quality/out/mutation.json")
-    report.unlink(missing_ok=True)
+    q.mutation_report(root, contract).unlink(missing_ok=True)
     try:
         rc, out = q.run_command(root, q.render(q.command(contract, "mutation"), base=base),
                                 timeout=int(m.get("budget_seconds", 240)))
         if q.missing_tool(rc, out):
             results["mutation"], findings["mutation"] = "missing-tool", missing_tool("mutation", q.tail(out))
         else:
-            stats = json.loads(report.read_text())
-            killed, survived = int(stats["killed"]), int(stats["survived"])
-            total, threshold = killed + survived, float(m.get("threshold", 0.8))
-            results["mutation"] = "pass"
-            if total and killed / total < threshold:
-                survivors = "\n".join(stats.get("survivors", [])[:30])
-                results["mutation"] = "fail"
-                findings["mutation"] = (f"Mutation score {killed / total:.0%} is below {threshold:.0%} "
-                                        f"({survived} of {total} mutants survived). Strengthen the assertions "
-                                        f"so the tests fail for these mutants:\n{survivors}")
+            results["mutation"], finding = q.mutation_verdict(root, contract)
+            if finding:
+                findings["mutation"] = finding
     except subprocess.TimeoutExpired:
         results["mutation"] = "deferred"
         finish()
         notify("Mutation testing exceeded its time budget and was deferred to CI.")
-    except (OSError, ValueError, KeyError) as e:
-        results["mutation"] = "fail"
-        findings["mutation"] = f"Mutation report missing or invalid ({e}). Check the contract's `mutation` command."
 
 finish()
 if findings:

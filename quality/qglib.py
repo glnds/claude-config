@@ -261,6 +261,32 @@ def run_command(root, cmd, timeout=None, capture=True):
     return p.returncode, out or ""
 
 
+def mutation_report(root, contract):
+    return root / contract.get("mutation", {}).get("report", ".quality/out/mutation.json")
+
+
+def mutation_verdict(root, contract):
+    """("pass" | "fail", finding or "") from the normalised mutation report."""
+    m = contract.get("mutation", {})
+    try:
+        stats = json.loads(mutation_report(root, contract).read_text())
+        killed, survived = int(stats["killed"]), int(stats["survived"])
+    except (OSError, ValueError, KeyError) as e:
+        return "fail", f"Mutation report missing or invalid ({e}). Check the contract's `mutation` command."
+    total, threshold = killed + survived, float(m.get("threshold", 0.8))
+    if total and killed / total < threshold:
+        survivors = "\n".join(stats.get("survivors", [])[:30])
+        return "fail", (f"Mutation score {killed / total:.0%} is below {threshold:.0%} "
+                        f"({survived} of {total} mutants survived). Strengthen the assertions "
+                        f"so the tests fail for these mutants:\n{survivors}")
+    return "pass", ""
+
+
+def mutation_stage(contract):
+    """Where mutation testing runs: "stop" (the Stop gate, default) or "pre-push" (`qg-mutation`)."""
+    return contract.get("mutation", {}).get("stage", "stop")
+
+
 def missing_tool(rc, out):
     return rc in MISSING_TOOL or (rc != 0 and bool(MISSING_TOOL_RE.search(tail(out, 4000))))
 

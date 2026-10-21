@@ -242,5 +242,47 @@ echo 'package c' > c.go && git add -A && git commit -qm c
 hook stop_gate.py "{\"cwd\":\"$C\",\"session_id\":\"c\",\"stop_hook_active\":false}"
 has "30 base defaults to origin/master: committed change seen" '"decision": "block"'
 
+# --- Repository E: mutation staged on pre-push (`[mutation] stage`) -----------------------------
+E="$TMP/qg-prepush"
+newrepo "$E"
+mkdir -p .quality/out src && echo '.quality/out/' > .gitignore
+cat > .quality/contract.toml <<'EOF2'
+version = 1
+base = "HEAD"
+[paths]
+source = ["src/**"]
+tests  = ["tests/**"]
+docs   = ["README*"]
+[commands]
+test          = "true"
+diff_coverage = "true"
+mutation      = "sh .quality/mut.sh"
+[mutation]
+report = ".quality/out/mutation.json"
+threshold = 0.8
+budget_seconds = 5
+stage = "pre-push"
+EOF2
+printf '%s\n' 'touch .quality/out/ran' 'cp .quality/out/mut-fixture.json .quality/out/mutation.json' \
+  > .quality/mut.sh
+echo '{"killed": 5, "survived": 5, "survivors": ["src/e.py:1 AddNot"]}' > .quality/out/mut-fixture.json
+git add -A && git commit -qm e && trust
+echo x > src/e.py && echo d > README.md
+hook stop_gate.py "{\"cwd\":\"$E\",\"session_id\":\"e\",\"stop_hook_active\":false}"
+silent "40 stage pre-push: stop gate does not block on mutation"
+[ ! -f .quality/out/ran ] && ok "40 stage pre-push: stop gate does not run mutation" \
+  || bad "40 stop gate ran the mutation command"
+qgmut() { out=$("$QG_HOME/qg-mutation" "$@" 2>&1); rc=$?; }
+qgmut; [ "$rc" = 1 ] && ok "41 qg-mutation below threshold: exit 1" || bad "41 expected exit 1"
+has "41 qg-mutation reports the score" "Mutation score 50% is below 80%"
+has "41 qg-mutation lists survivors" "src/e.py:1 AddNot"
+echo '{"killed": 9, "survived": 1}' > .quality/out/mut-fixture.json
+qgmut; [ "$rc" = 0 ] && ok "42 qg-mutation at threshold: exit 0" || bad "42 expected exit 0"
+rm .quality/out/mut-fixture.json
+qgmut; [ "$rc" = 1 ] && ok "43 missing report: exit 1" || bad "43 expected exit 1"
+has "43 missing report explained" "Mutation report missing or invalid"
+echo '# changed' >> .quality/mut.sh
+qgmut; [ "$rc" = 3 ] && ok "44 untrusted contract: exit 3" || bad "44 expected exit 3"
+
 echo; echo "passed $pass, failed $fail"
 [ "$fail" = 0 ]

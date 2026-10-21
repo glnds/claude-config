@@ -232,6 +232,7 @@ mutation      = "uv run python .quality/mutation.py {base}"
 report         = ".quality/out/mutation.json"
 threshold      = 0.8   # minimum killed / (killed + survived)
 budget_seconds = 240   # in-session time box; CI runs without it
+stage          = "stop" # or "pre-push": the Stop gate skips it, the pre-push hook runs qg-mutation
 skip_paths     = { paths = ["src/legacy/**"], reason = "...", until = 2026-12-31 }  # optional
 ```
 
@@ -273,6 +274,19 @@ mutation = { skip = "no mature mutation tool for this stack yet", until = 2026-1
 `[mutation] skip_paths` is the partial form. A change that only touches those paths does not
 trigger mutation testing; a change anywhere else in the source still does. It expires the same
 way. Slowness is never a valid reason to skip: a slow mutation run is deferred to CI on its own.
+
+### Mutation on pre-push
+
+`[mutation] stage = "pre-push"` takes mutation testing out of the Stop gate, which then records it
+as deferred and never runs it. The repository's pre-push hook calls `~/.claude/quality/qg-mutation`
+instead: it runs the `mutation` command for the commits being pushed (base: its argument, else the
+merge-base with the contract's `base`), applies the threshold without a time budget, and exits 0
+on pass, 1 below the threshold or with no valid report, 3 on an untrusted contract. Use it when a
+run takes minutes: a Stop gate that runs it every turn costs more than it catches.
+
+A mutation tool that rewrites sources in place (Cosmic Ray) must run in a throwaway worktree: a run
+killed mid-mutant otherwise leaves the mutant in the shared checkout, where parallel sessions test
+and commit it.
 
 ## A session, start to finish
 
@@ -430,6 +444,7 @@ Claude Code's `stop_hook_active` flag, so there is at most one block per turn.
 | Contract not trusted                                       | Block once for this change set                           |
 | No contract, code changed                                  | Block once per session; later one warning per change set |
 | Mutation run over its budget                               | Message "deferred to CI", no block                       |
+| `[mutation] stage = "pre-push"`                            | Mutation not run; `qg-mutation` checks it on push        |
 | Only docs or tests changed, or nothing changed             | Silent                                                   |
 
 **Order and time limits.** Tests run first: if they fail, nothing else is worth running. Then
